@@ -180,7 +180,8 @@ PrototypePtr Parser::prototype(Lexer &lexer) {
 
   lexer.read();
   while (lexer.type() == Atom::identifier) {
-    args.push_back(identifier);
+    std::string arg = lexer.atom();
+    args.push_back(arg);
     lexer.read();
   }
 
