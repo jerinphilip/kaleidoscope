@@ -154,6 +154,8 @@ Op op_from_keyword(char op) {
     return Op::div;
   if (op == '*')
     return Op::mul;
+  if (op == '<')
+    return Op::lt;
 
   std::abort();
 
