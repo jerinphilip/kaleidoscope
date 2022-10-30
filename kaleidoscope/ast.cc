@@ -83,16 +83,17 @@ Value *Call::codegen(LLVMStuff &llvms) const {
 Function *Prototype::codegen(LLVMStuff &llvms) const {
   // Make the function type:  double(double,double) etc.
   std::vector<Type *> Doubles(args_.size(), Type::getDoubleTy(llvms.context()));
-  FunctionType *FT =
+  FunctionType *function_type =
       FunctionType::get(Type::getDoubleTy(llvms.context()), Doubles, false);
 
-  Function *fn =
-      Function::Create(FT, Function::ExternalLinkage, name_, llvms.module());
+  Function *fn = Function::Create(function_type, Function::ExternalLinkage,
+                                  name_, llvms.module());
 
   // Set names for all arguments.
   unsigned idx = 0;
-  for (auto &arg : fn->args())
+  for (auto &arg : fn->args()) {
     arg.setName(args_[idx++]);
+  }
 
   return fn;
 }
