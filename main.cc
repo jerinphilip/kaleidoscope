@@ -1,6 +1,6 @@
 
-#include "lexer.h"
-#include "parser.h"
+#include "kaleidoscope/lexer.h"
+#include "kaleidoscope/parser.h"
 #include <cstdio>
 
 int main() {
