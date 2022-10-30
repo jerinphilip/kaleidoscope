@@ -9,7 +9,7 @@ public:
 
 using ExprPtr = std::unique_ptr<Expr>;
 
-enum class Op { add, sub, mul, div, mod };
+enum class Op { add, sub, mul, div, mod, unknown };
 
 class Number : public Expr {
 public:
@@ -38,9 +38,21 @@ private:
 };
 
 namespace function {
-using Args = std::vector<ExprPtr>;
+using ArgExprs = std::vector<ExprPtr>;
+using Args = std::vector<std::string>;
 
-class Prototype {
+class Prototype;
+class Definition;
+class Call;
+
+} // namespace function
+
+using PrototypePtr = std::unique_ptr<function::Prototype>;
+using DefinitionPtr = std::unique_ptr<function::Definition>;
+
+namespace function {
+
+class Prototype : public Expr {
 public:
   Prototype(const std::string &name, Args args)
       : name_(name), args_(std::move(args)) {}
@@ -50,10 +62,8 @@ private:
   Args args_;
 };
 
-class Definition {
+class Definition : public Expr {
 public:
-  using PrototypePtr = std::unique_ptr<Prototype>;
-
   Definition(PrototypePtr prototype, ExprPtr body)
       : prototype_(std::move(prototype)), body_(std::move(body)) {}
 
@@ -64,11 +74,11 @@ private:
 
 class Call : public Expr {
 public:
-  Call(const std::string &name, Args args)
+  Call(const std::string &name, ArgExprs args)
       : name_(name), args_(std::move(args)) {}
 
 private:
   std::string name_;
-  Args args_;
+  ArgExprs args_;
 };
 } // namespace function
