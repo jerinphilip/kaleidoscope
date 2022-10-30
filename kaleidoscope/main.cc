@@ -3,11 +3,11 @@
 #include <cstdio>
 
 int main() {
-  Parser parser;
+  Lexer lexer;
   Token token = Token::init;
   while (token != Token::eof) {
     fprintf(stderr, "> ");
-    token = parser.read();
+    token = lexer.read();
     switch (token) {
 
     case Token::eof:
