@@ -27,7 +27,7 @@ ExprPtr Parser::paranthesis(Lexer &lexer) {
     return nullptr;
   }
 
-  if (lexer.last_char() != ')') {
+  if (lexer.current() != ')') {
     return LogError("expected )");
   }
 
@@ -42,7 +42,7 @@ ExprPtr Parser::identifier(Lexer &lexer) {
   std::string identifier = lexer.atom();
   lexer.read();
 
-  if (lexer.last_char() != '(') {
+  if (lexer.current() != '(') {
     return std::make_unique<Variable>(identifier);
   }
 
@@ -50,7 +50,7 @@ ExprPtr Parser::identifier(Lexer &lexer) {
 
   function::ArgExprs args;
 
-  if (lexer.last_char() != ')') {
+  if (lexer.current() != ')') {
     while (true) {
       if (auto arg = expression(lexer)) {
         args.push_back(std::move(arg));
@@ -58,11 +58,11 @@ ExprPtr Parser::identifier(Lexer &lexer) {
         return nullptr;
       }
 
-      if (lexer.last_char() == ')') {
+      if (lexer.current() == ')') {
         break;
       }
 
-      if (lexer.last_char() != ',') {
+      if (lexer.current() != ',') {
         return LogError("Expected ')' or ',' in argument list");
       }
 
@@ -78,14 +78,15 @@ ExprPtr Parser::identifier(Lexer &lexer) {
 //       | numberExpr
 //       | paranthesisExpr
 ExprPtr Parser::primary(Lexer &lexer) {
-  switch (lexer.current()) {
+  switch (lexer.type()) {
   default:
+    fprintf(stderr, "Unknown token {%s}\n", lexer.atom().c_str());
     return LogError("Unknown token.");
-  case Token::identifier:
+  case Atom::identifier:
     return identifier(lexer);
-  case Token::number:
+  case Atom::number:
     return number(lexer);
-  case Token::parenthesisOpen:
+  case Atom::open:
     return paranthesis(lexer);
   }
 }
@@ -99,8 +100,8 @@ ExprPtr Parser::expression(Lexer &lexer) {
   return binOpRHS(lexer, 0, std::move(lhs));
 }
 
-int resolve_precedence(Lexer &lexer) {
-  auto query = OP_PRECEDENCE.find(lexer.last_char());
+int resolve_precedence(char op) {
+  auto query = OP_PRECEDENCE.find(op);
   if (query != OP_PRECEDENCE.end()) {
     return query->second;
   }
@@ -109,12 +110,12 @@ int resolve_precedence(Lexer &lexer) {
 
 ExprPtr Parser::binOpRHS(Lexer &lexer, int expr_precedence, ExprPtr lhs) {
   while (true) {
-    int precedence = resolve_precedence(lexer);
+    char binOp = lexer.current();
+    int precedence = resolve_precedence(binOp);
     if (precedence < expr_precedence) {
       return lhs;
     }
 
-    char binOp = lexer.last_char();
     lexer.read();
 
     ExprPtr rhs = primary(lexer);
@@ -122,9 +123,10 @@ ExprPtr Parser::binOpRHS(Lexer &lexer, int expr_precedence, ExprPtr lhs) {
       return nullptr;
     }
 
-    int next_precedence = resolve_precedence(lexer);
+    char nextBinOp = lexer.current();
+    int next_precedence = resolve_precedence(nextBinOp);
+    lexer.read();
     if (precedence < next_precedence) {
-      // What is this precedence + 1?
       rhs = binOpRHS(lexer, precedence + 1, std::move(rhs));
       if (rhs == nullptr)
         return nullptr;
@@ -152,25 +154,27 @@ Op op_from_keyword(char op) {
 }
 
 PrototypePtr Parser::prototype(Lexer &lexer) {
-  if (lexer.current() != Token::identifier) {
+  if (lexer.type() != Atom::identifier) {
     return LogErrorP("Expected function name in prototype");
   }
 
   std::string identifier = lexer.atom();
-  lexer.read();
+  fprintf(stderr, "Identifier %s\n", identifier.c_str());
 
-  if (lexer.last_char() == '(') {
+  lexer.read();
+  if (lexer.current() != '(') {
     return LogErrorP("Expected '(' in prototype");
   }
 
   std::vector<std::string> args;
 
   lexer.read();
-  while (lexer.current() == Token::identifier) {
+  while (lexer.type() == Atom::identifier) {
     args.push_back(identifier);
     lexer.read();
   }
-  if (lexer.last_char() != ')') {
+
+  if (lexer.current() != ')') {
     return LogErrorP("Expected ')' in prototype");
   }
 
@@ -180,7 +184,7 @@ PrototypePtr Parser::prototype(Lexer &lexer) {
 }
 
 ExprPtr Parser::definition(Lexer &lexer) {
-  lexer.read();
+  lexer.read(); // Consume '('
   std::unique_ptr<function::Prototype> prototype_expr = prototype(lexer);
   if (prototype_expr == nullptr) {
     return nullptr;

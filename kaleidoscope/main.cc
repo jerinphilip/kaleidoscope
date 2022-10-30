@@ -1,42 +1,69 @@
 
 #include "lexer.h"
+#include "parser.h"
 #include <cstdio>
 
 int main() {
   Lexer lexer;
-  Token token = Token::init;
-  while (token != Token::eof) {
-    fprintf(stderr, "> ");
-    token = lexer.read();
-    switch (token) {
+  Parser parser;
+  ExprPtr expr = nullptr;
 
-    case Token::eof:
+  fprintf(stderr, "> ");
+  Atom symbol = lexer.read();
+  while (symbol != Atom::eof) {
+
+    switch (symbol) {
+
+    case Atom::eof: {
       fprintf(stderr, "Parsed EOF\n");
-      break;
+      return 0;
+    } break;
 
-    case Token::def:
+    case Atom::def: {
       // Handle definition
-      fprintf(stderr, "Parsed def\n");
-      break;
+      fprintf(stderr, "Attempting to parse def ....\n");
+      expr = parser.definition(lexer);
+      if (expr) {
+        fprintf(stderr, "Parsed def\n");
+      } else {
+        fprintf(stderr, "Failed to parse...\n");
+        lexer.read();
+      }
+    } break;
 
-    case Token::extern_:
+    case Atom::extern_: {
       // Handle extern
-      fprintf(stderr, "Parsed extern\n");
-      break;
+      expr = parser.extern_(lexer);
+      if (expr) {
+        fprintf(stderr, "Parsed extern\n");
+      } else {
+        lexer.read();
+      }
+    } break;
 
-    case Token::comment:
+    case Atom::comment: {
       fprintf(stderr, "Parsed comment\n");
-      break;
+    } break;
 
-    case Token::unknown:
+    case Atom::unknown: {
       fprintf(stderr, "Parsed unknown\n");
-      break;
+    } break;
 
-    case Token::init:
-      break;
-    default:
-      break;
+    case Atom::semicolon: {
+      lexer.read();
+    } break;
+
+    default: {
+      expr = parser.top(lexer);
+      if (expr) {
+        fprintf(stderr, "Parsed top-level expression\n");
+      } else {
+        lexer.read();
+      }
+    } break;
     }
+
+    symbol = lexer.read();
   }
   return 0;
 }

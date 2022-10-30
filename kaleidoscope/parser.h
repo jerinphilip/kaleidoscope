@@ -1,7 +1,6 @@
 #pragma once
 #include "ast.h"
 #include "lexer.h"
-#include <map>
 
 ExprPtr LogError(const char *message);
 std::unique_ptr<function::Prototype> LogErrorP(const char *message);
@@ -46,6 +45,3 @@ public:
   /// top = expression
   DefinitionPtr top(Lexer &lexer);
 };
-
-static std::map<char, int> OP_PRECEDENCE = {
-    {'<', 10}, {'+', 20}, {'-', 20}, {'*', 40}, {'/', 40}};

@@ -1,61 +1,94 @@
 #include "lexer.h"
 #include <memory>
 
-Token Lexer::read() {
-  char last_char_ = ' ';
+namespace detail {
+bool isOp(char c) {
+  auto query = OP_PRECEDENCE.find(c);
+  return query != OP_PRECEDENCE.end();
+}
+} // namespace detail
+
+Atom Lexer::read() {
+  fprintf(stderr, "[lexer] Moving past %s\n", atom().c_str());
 
   // Skip leading whitespaces.
-  while (isspace(last_char_)) {
-    last_char_ = getchar();
+  while (isspace(next_)) {
+    next_ = advance();
   }
 
   // Identifier parsing logic.
-  if (isalpha(last_char_)) {
-    atom_ = last_char_;
-    last_char_ = getchar();
-    while (isalnum(last_char_)) {
-      atom_ += last_char_;
-      last_char_ = getchar();
+  if (isalpha(next_)) {
+    atom_ = std::string(1, next_);
+    next_ = advance();
+    while (isalnum(next_)) {
+      atom_ += next_;
+      next_ = advance();
     }
 
     if (atom_ == "def") {
-      return set(Token::def);
+      return set(Atom::def);
     }
 
     if (atom_ == "extern") {
-      return set(Token::extern_);
+      fprintf(stderr, "Parsed extern\n");
+      return set(Atom::extern_);
     }
 
-    return set(Token::identifier);
+    return set(Atom::identifier);
   }
 
   // Number parsing logic.
-  if (isdigit(last_char_) || last_char_ == '.') {
+  if (isdigit(next_) || next_ == '.') {
     atom_ = "";
-    while (isdigit(last_char_) || last_char_ == '.') {
-      atom_ += last_char_;
-      last_char_ = getchar();
+    while (isdigit(next_) || next_ == '.') {
+      atom_ += next_;
+      next_ = advance();
     }
 
-    return set(Token::number);
+    return set(Atom::number);
   }
 
   // Comments
-  if (last_char_ == '#') {
-    // Skip comments.
-    while (last_char_ != EOF && last_char_ != '\n' && last_char_ != '\r') {
-      last_char_ = getchar();
+  if (next_ == '#') {
+    atom_ = "";
+    while (next_ != EOF && next_ != '\n' && next_ != '\r') {
+      atom_ += next_;
+      next_ = advance();
     }
 
-    atom_ = "";
-    return set(Token::comment);
+    return set(Atom::comment);
   }
 
-  if (last_char_ == EOF) {
-    atom_ = EOF;
-    return set(Token::eof);
+  if (next_ == '(') {
+    atom_ = "(";
+    next_ = advance();
+    return set(Atom::open);
   }
 
-  atom_ = last_char_;
-  return set(Token::unknown);
+  if (next_ == ')') {
+    atom_ = ")";
+    next_ = advance();
+    return set(Atom::close);
+  }
+
+  if (next_ == EOF) {
+    atom_ = std::string(1, EOF);
+    return set(Atom::eof);
+  }
+
+  if (next_ == ';') {
+    atom_ = std::string(1, next_);
+    next_ = advance();
+    return set(Atom::semicolon);
+  }
+
+  if (detail::isOp(next_)) {
+    atom_ = std::string(1, next_);
+    next_ = advance();
+    return set(Atom::op);
+  }
+
+  atom_ = std::string(1, next_);
+  next_ = advance();
+  return set(Atom::unknown);
 }

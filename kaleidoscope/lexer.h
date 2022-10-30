@@ -1,36 +1,48 @@
 #pragma once
 #include "ast.h"
 #include <cstdio>
+#include <map>
 #include <memory>
 #include <string>
 
-enum class Token {
-  eof = -1,
-  def = -2,
-  extern_ = -3,
-  identifier = -4,
-  number = -5,
-  init = -6,
-  semicolon = -7,
-  comment = -8,
-  unknown = -9,
-  parenthesisOpen = -10
+enum class Atom {
+  eof,
+  def,
+  extern_,
+  identifier,
+  number,
+  semicolon,
+  comment,
+  open,
+  close,
+  op,
+  unknown
 };
 
 class Lexer {
 public:
-  Token read();
+  Lexer() : next_(' '){};
+  Atom read();
   const std::string &atom() const { return atom_; }
-  char last_char() const { return last_char_; }
-  Token current() const { return last_token_; }
+  char next() const { return next_; }
+  char current() const { return current_; }
+  Atom type() const { return type_; }
 
 private:
-  Token set(Token token) {
-    last_token_ = token;
+  Atom set(Atom token) {
+    type_ = token;
     return token;
   }
 
+  char advance() {
+    current_ = next_;
+    return getchar();
+  }
+
   std::string atom_;
-  char last_char_;
-  Token last_token_;
+  char current_, next_;
+  Atom type_;
 };
+
+static std::map<char, int> OP_PRECEDENCE = {
+    {'<', 10}, {'+', 20}, {'-', 20}, {'*', 40}, {'/', 40}};
