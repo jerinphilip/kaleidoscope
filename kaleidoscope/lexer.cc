@@ -30,7 +30,6 @@ Atom Lexer::read() {
     }
 
     if (atom_ == "extern") {
-      fprintf(stderr, "Parsed extern\n");
       return set(Atom::extern_);
     }
 
@@ -86,6 +85,12 @@ Atom Lexer::read() {
     atom_ = std::string(1, next_);
     next_ = advance();
     return set(Atom::op);
+  }
+
+  if (next_ == ',') {
+    atom_ = std::string(1, next_);
+    next_ = advance();
+    return set(Atom::comma);
   }
 
   atom_ = std::string(1, next_);

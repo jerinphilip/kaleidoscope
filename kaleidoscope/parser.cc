@@ -69,6 +69,7 @@ ExprPtr Parser::identifier(Lexer &lexer) {
       }
 
       lexer.read();
+      fprintf(stderr, "FnArg: %s", lexer.atom().c_str());
     }
   }
   lexer.read();
@@ -176,12 +177,15 @@ PrototypePtr Parser::prototype(Lexer &lexer) {
     return LogErrorP("Expected '(' in prototype");
   }
 
+  // Consume '('; Should have argument next;
+  lexer.read();
+
   std::vector<std::string> args;
 
-  lexer.read();
   while (lexer.type() == Atom::identifier) {
     std::string arg = lexer.atom();
     args.push_back(arg);
+    fprintf(stderr, "arg: %s\n", arg.c_str());
     lexer.read();
   }
 
@@ -195,7 +199,7 @@ PrototypePtr Parser::prototype(Lexer &lexer) {
 }
 
 DefinitionPtr Parser::definition(Lexer &lexer) {
-  lexer.read(); // Consume '('
+  lexer.read(); // Consume `def`
   std::unique_ptr<function::Prototype> prototype_expr = prototype(lexer);
   if (prototype_expr == nullptr) {
     return nullptr;

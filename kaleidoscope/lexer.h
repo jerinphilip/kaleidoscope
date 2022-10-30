@@ -16,7 +16,8 @@ enum class Atom {
   open,
   close,
   op,
-  unknown
+  unknown,
+  comma
 };
 
 class Lexer {
