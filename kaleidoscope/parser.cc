@@ -21,7 +21,9 @@ ExprPtr Parser::number(Lexer &lexer) {
 
 // paranthesisExpr = '(' expression ')'
 ExprPtr Parser::paranthesis(Lexer &lexer) {
+  // Consume the '('
   lexer.read();
+
   auto expr = expression(lexer);
   if (expr == nullptr) {
     return nullptr;
@@ -31,6 +33,7 @@ ExprPtr Parser::paranthesis(Lexer &lexer) {
     return LogError("expected )");
   }
 
+  // Consume the ')'
   lexer.read();
   return expr;
 }
@@ -40,8 +43,8 @@ ExprPtr Parser::paranthesis(Lexer &lexer) {
 //        | identifierName '(' expression* ')'
 ExprPtr Parser::identifier(Lexer &lexer) {
   std::string identifier = lexer.atom();
-  lexer.read();
 
+  lexer.read();
   if (lexer.current() != '(') {
     return std::make_unique<Variable>(identifier);
   }
@@ -49,7 +52,6 @@ ExprPtr Parser::identifier(Lexer &lexer) {
   lexer.read();
 
   function::ArgExprs args;
-
   if (lexer.current() != ')') {
     while (true) {
       if (auto arg = expression(lexer)) {
@@ -110,23 +112,29 @@ int resolve_precedence(char op) {
 
 ExprPtr Parser::binOpRHS(Lexer &lexer, int expr_precedence, ExprPtr lhs) {
   while (true) {
-    char binOp = lexer.current();
+    char binOp = lexer.next();
     int precedence = resolve_precedence(binOp);
     if (precedence < expr_precedence) {
+      // Case of -1, when we can return just the primary expression.
       return lhs;
     }
 
+    // Consume the pending binOp. If there is no binOp, the expression above
+    // would have returned.
     lexer.read();
 
+    // See what rhs has for us. Attempt to parse again.
     ExprPtr rhs = primary(lexer);
     if (rhs == nullptr) {
       return nullptr;
     }
 
-    char nextBinOp = lexer.current();
+    // Do we have a binOp behind the rhs?
+    char nextBinOp = lexer.next();
     int next_precedence = resolve_precedence(nextBinOp);
-    lexer.read();
+
     if (precedence < next_precedence) {
+      // Recursive call, should take care of (op, operand)*
       rhs = binOpRHS(lexer, precedence + 1, std::move(rhs));
       if (rhs == nullptr)
         return nullptr;

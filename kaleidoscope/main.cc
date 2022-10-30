@@ -63,6 +63,7 @@ int main() {
     } break;
     }
 
+    fprintf(stderr, "> ");
     symbol = lexer.read();
   }
   return 0;

@@ -9,7 +9,7 @@ bool isOp(char c) {
 } // namespace detail
 
 Atom Lexer::read() {
-  fprintf(stderr, "[lexer] Moving past %s\n", atom().c_str());
+  // fprintf(stderr, "[lexer] Moving past %s\n", atom().c_str());
 
   // Skip leading whitespaces.
   while (isspace(next_)) {

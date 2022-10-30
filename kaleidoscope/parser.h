@@ -5,6 +5,7 @@
 ExprPtr LogError(const char *message);
 std::unique_ptr<function::Prototype> LogErrorP(const char *message);
 Op op_from_keyword(char op);
+int resolve_precedence(char op);
 
 class Parser {
 public:
