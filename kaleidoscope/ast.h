@@ -21,7 +21,9 @@ public:
 
   llvm::Value *lookup(const std::string &name) {
     auto query = named_values_.find(name);
-    assert(query != named_values_.end());
+    if (query == named_values_.end()) {
+      return nullptr;
+    }
     return query->second;
   }
 
