@@ -38,7 +38,7 @@ public:
   PrototypePtr prototype(Lexer &lexer);
 
   /// definition = 'def' prototype expression
-  ExprPtr definition(Lexer &lexer);
+  DefinitionPtr definition(Lexer &lexer);
 
   /// external = 'extern' prototype
   PrototypePtr extern_(Lexer &lexer);

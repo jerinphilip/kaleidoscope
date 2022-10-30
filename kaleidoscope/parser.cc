@@ -191,7 +191,7 @@ PrototypePtr Parser::prototype(Lexer &lexer) {
   return std::make_unique<function::Prototype>(identifier, std::move(args));
 }
 
-ExprPtr Parser::definition(Lexer &lexer) {
+DefinitionPtr Parser::definition(Lexer &lexer) {
   lexer.read(); // Consume '('
   std::unique_ptr<function::Prototype> prototype_expr = prototype(lexer);
   if (prototype_expr == nullptr) {

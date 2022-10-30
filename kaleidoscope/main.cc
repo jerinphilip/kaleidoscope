@@ -6,7 +6,6 @@
 int main() {
   Lexer lexer;
   Parser parser;
-  ExprPtr expr = nullptr;
 
   fprintf(stderr, "> ");
   Atom symbol = lexer.read();
@@ -22,8 +21,8 @@ int main() {
     case Atom::def: {
       // Handle definition
       fprintf(stderr, "Attempting to parse def ....\n");
-      expr = parser.definition(lexer);
-      if (expr) {
+      DefinitionPtr def = parser.definition(lexer);
+      if (def) {
         fprintf(stderr, "Parsed def\n");
       } else {
         fprintf(stderr, "Failed to parse...\n");
@@ -33,7 +32,7 @@ int main() {
 
     case Atom::extern_: {
       // Handle extern
-      expr = parser.extern_(lexer);
+      PrototypePtr expr = parser.extern_(lexer);
       if (expr) {
         fprintf(stderr, "Parsed extern\n");
       } else {
@@ -54,7 +53,7 @@ int main() {
     } break;
 
     default: {
-      expr = parser.top(lexer);
+      DefinitionPtr expr = parser.top(lexer);
       if (expr) {
         fprintf(stderr, "Parsed top-level expression\n");
       } else {

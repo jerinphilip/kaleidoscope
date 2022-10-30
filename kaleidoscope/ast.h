@@ -53,7 +53,7 @@ using DefinitionPtr = std::unique_ptr<function::Definition>;
 
 namespace function {
 
-class Prototype : public Expr {
+class Prototype {
 public:
   Prototype(const std::string &name, Args args)
       : name_(name), args_(std::move(args)) {}
@@ -63,7 +63,7 @@ private:
   Args args_;
 };
 
-class Definition : public Expr {
+class Definition {
 public:
   Definition(PrototypePtr prototype, ExprPtr body)
       : prototype_(std::move(prototype)), body_(std::move(body)) {}
