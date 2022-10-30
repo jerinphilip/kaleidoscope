@@ -8,17 +8,34 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
 
-static llvm::LLVMContext CONTEXT;
-static llvm::IRBuilder<> BUILDER(CONTEXT);
-static std::unique_ptr<llvm::Module> MODULE;
-static std::map<std::string, llvm::Value *> NAMED_VALUES;
+class LLVMStuff {
+public:
+  LLVMStuff(const std::string name)
+      : context_(), module_(name, context_), builder_(context_) {}
+
+  llvm::LLVMContext &context() { return context_; }
+  llvm::Module &module() { return module_; };
+  llvm::IRBuilder<> &builder() { return builder_; }
+
+  llvm::Value *lookup(const std::string &name) {
+    auto query = named_values_.find(name);
+    assert(query != named_values_.end());
+    return query->second;
+  }
+
+private:
+  llvm::LLVMContext context_;
+  llvm::Module module_;
+  llvm::IRBuilder<> builder_;
+  std::map<std::string, llvm::Value *> named_values_;
+};
 
 llvm::Value *LogErrorV(const char *str);
 
 class Expr {
 public:
   virtual ~Expr();
-  virtual llvm::Value *codegen() const = 0;
+  virtual llvm::Value *codegen(LLVMStuff &llvms) const = 0;
 };
 
 using ExprPtr = std::unique_ptr<Expr>;
@@ -28,7 +45,7 @@ enum class Op { add, sub, mul, div, mod, lt, unknown };
 class Number : public Expr {
 public:
   Number(double value) : value_(value) {}
-  llvm::Value *codegen() const final;
+  llvm::Value *codegen(LLVMStuff &llvms) const final;
 
 private:
   double value_;
@@ -37,7 +54,7 @@ private:
 class Variable : public Expr {
 public:
   Variable(const std::string &name) : name_(name) {}
-  llvm::Value *codegen() const final;
+  llvm::Value *codegen(LLVMStuff &llvms) const final;
 
 private:
   std::string name_;
@@ -48,7 +65,7 @@ public:
   BinaryOp(Op op, ExprPtr lhs, ExprPtr rhs)
       : op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)) {}
 
-  llvm::Value *codegen() const final;
+  llvm::Value *codegen(LLVMStuff &llvms) const final;
 
 private:
   Op op_;
@@ -75,7 +92,7 @@ public:
   Prototype(const std::string &name, Args args)
       : name_(name), args_(std::move(args)) {}
 
-  llvm::Function *codegen() const;
+  llvm::Function *codegen(LLVMStuff &llvms) const;
 
 private:
   std::string name_;
@@ -96,7 +113,7 @@ class Call : public Expr {
 public:
   Call(const std::string &name, ArgExprs args)
       : name_(name), args_(std::move(args)) {}
-  llvm::Value *codegen() const final;
+  llvm::Value *codegen(LLVMStuff &llvms) const final;
 
 private:
   std::string name_;
