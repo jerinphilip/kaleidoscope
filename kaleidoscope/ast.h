@@ -7,6 +7,8 @@
 
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Type.h"
 
 class LLVMStuff {
 public:
@@ -22,6 +24,12 @@ public:
     assert(query != named_values_.end());
     return query->second;
   }
+
+  void set(const std::string &name, llvm::Value *value) {
+    named_values_[name] = value;
+  }
+
+  void clear() { named_values_.clear(); }
 
 private:
   llvm::LLVMContext context_;
@@ -94,6 +102,8 @@ public:
 
   llvm::Function *codegen(LLVMStuff &llvms) const;
 
+  const std::string &name() { return name_; };
+
 private:
   std::string name_;
   Args args_;
@@ -103,6 +113,8 @@ class Definition {
 public:
   Definition(PrototypePtr prototype, ExprPtr body)
       : prototype_(std::move(prototype)), body_(std::move(body)) {}
+
+  llvm::Function *codegen(LLVMStuff &llvms) const;
 
 private:
   PrototypePtr prototype_;

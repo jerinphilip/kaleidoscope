@@ -1,8 +1,14 @@
 
 #include "ast.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Type.h"
 #include "llvm/IR/Value.h"
+#include "llvm/IR/Verifier.h"
 
 using llvm::APFloat;
+using llvm::BasicBlock;
 using llvm::ConstantFP;
 using llvm::Function;
 using llvm::FunctionType;
@@ -80,8 +86,55 @@ Function *Prototype::codegen(LLVMStuff &llvms) const {
   FunctionType *FT =
       FunctionType::get(Type::getDoubleTy(llvms.context()), Doubles, false);
 
-  Function *F =
+  Function *fn =
       Function::Create(FT, Function::ExternalLinkage, name_, llvms.module());
+
+  // Set names for all arguments.
+  unsigned idx = 0;
+  for (auto &arg : fn->args())
+    arg.setName(args_[idx++]);
+
+  return fn;
+}
+
+Function *Definition::codegen(LLVMStuff &llvms) const {
+  // First, check for an existing function from a previous 'extern' declaration.
+  Function *fn = llvms.module().getFunction(prototype_->name());
+
+  if (!fn)
+    fn = prototype_->codegen(llvms);
+
+  if (!fn)
+    return nullptr;
+
+  if (!fn->empty())
+    return (Function *)LogErrorV("Function cannot be redefined.");
+
+  // Create a new basic block to start insertion into.
+  BasicBlock *BB = BasicBlock::Create(llvms.context(), "entry", fn);
+  llvms.builder().SetInsertPoint(BB);
+
+  // Record the function arguments in the NamedValues map.
+  llvms.clear();
+  for (auto &arg : fn->args()) {
+    llvm::StringRef nameRef = arg.getName();
+    std::string name(nameRef.data(), nameRef.size());
+    llvms.set(name, &arg);
+  }
+
+  if (Value *RetVal = body_->codegen(llvms)) {
+    // Finish off the function.
+    llvms.builder().CreateRet(RetVal);
+
+    // Validate the generated code, checking for consistency.
+    verifyFunction(*fn);
+
+    return fn;
+  }
+
+  // Error reading body, remove function.
+  fn->eraseFromParent();
+  return nullptr;
 }
 
 } // namespace function
