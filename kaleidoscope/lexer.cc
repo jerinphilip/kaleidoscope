@@ -12,9 +12,7 @@ Atom Lexer::read() {
   // fprintf(stderr, "[lexer] Moving past %s\n", atom().c_str());
 
   // Skip leading whitespaces.
-  while (isspace(next_)) {
-    next_ = getchar();
-  }
+  skip_spaces();
 
   // Identifier parsing logic.
   if (isalpha(next_)) {

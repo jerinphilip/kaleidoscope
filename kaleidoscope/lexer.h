@@ -32,15 +32,18 @@ public:
 private:
   Atom produce(Atom token) {
     type_ = token;
+    return token;
+  }
+
+  inline void skip_spaces() {
     while (isspace(next_)) {
       next_ = getchar();
     }
-
-    return token;
   }
 
   char advance() {
     current_ = next_;
+    skip_spaces();
     return getchar();
   }
 
