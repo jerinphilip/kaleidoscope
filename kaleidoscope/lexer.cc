@@ -13,7 +13,7 @@ Atom Lexer::read() {
 
   // Skip leading whitespaces.
   while (isspace(next_)) {
-    next_ = advance();
+    next_ = getchar();
   }
 
   // Identifier parsing logic.
