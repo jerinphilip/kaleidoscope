@@ -114,7 +114,7 @@ int resolve_precedence(char op) {
 
 ExprPtr Parser::binOpRHS(Lexer &lexer, int expr_precedence, ExprPtr lhs) {
   while (true) {
-    char binOp = lexer.next();
+    char binOp = lexer.current();
     int precedence = resolve_precedence(binOp);
     if (precedence < expr_precedence) {
       // Case of -1, when we can return just the primary expression.
@@ -132,7 +132,7 @@ ExprPtr Parser::binOpRHS(Lexer &lexer, int expr_precedence, ExprPtr lhs) {
     }
 
     // Do we have a binOp behind the rhs?
-    char nextBinOp = lexer.next();
+    char nextBinOp = lexer.current();
     int next_precedence = resolve_precedence(nextBinOp);
 
     if (precedence < next_precedence) {
