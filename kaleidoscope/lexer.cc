@@ -26,14 +26,14 @@ Atom Lexer::read() {
     }
 
     if (atom_ == "def") {
-      return set(Atom::def);
+      return produce(Atom::def);
     }
 
     if (atom_ == "extern") {
-      return set(Atom::extern_);
+      return produce(Atom::extern_);
     }
 
-    return set(Atom::identifier);
+    return produce(Atom::identifier);
   }
 
   // Number parsing logic.
@@ -44,7 +44,7 @@ Atom Lexer::read() {
       next_ = advance();
     }
 
-    return set(Atom::number);
+    return produce(Atom::number);
   }
 
   // Comments
@@ -55,45 +55,45 @@ Atom Lexer::read() {
       next_ = advance();
     }
 
-    return set(Atom::comment);
+    return produce(Atom::comment);
   }
 
   if (next_ == '(') {
     atom_ = "(";
     next_ = advance();
-    return set(Atom::open);
+    return produce(Atom::open);
   }
 
   if (next_ == ')') {
     atom_ = ")";
     next_ = advance();
-    return set(Atom::close);
+    return produce(Atom::close);
   }
 
   if (next_ == EOF) {
     atom_ = std::string(1, EOF);
-    return set(Atom::eof);
+    return produce(Atom::eof);
   }
 
   if (next_ == ';') {
     atom_ = std::string(1, next_);
     next_ = advance();
-    return set(Atom::semicolon);
+    return produce(Atom::semicolon);
   }
 
   if (detail::isOp(next_)) {
     atom_ = std::string(1, next_);
     next_ = advance();
-    return set(Atom::op);
+    return produce(Atom::op);
   }
 
   if (next_ == ',') {
     atom_ = std::string(1, next_);
     next_ = advance();
-    return set(Atom::comma);
+    return produce(Atom::comma);
   }
 
   atom_ = std::string(1, next_);
   next_ = advance();
-  return set(Atom::unknown);
+  return produce(Atom::unknown);
 }
