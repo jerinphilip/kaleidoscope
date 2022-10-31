@@ -22,16 +22,16 @@ int main() {
 
     case Atom::def: {
       // Handle definition
-      fprintf(stderr, "Attempting to parse def ....\n");
+      // fprintf(stderr, "Attempting to parse def ....\n");
       DefinitionPtr def = parser.definition(lexer);
       if (def) {
-        fprintf(stderr, "Parsed def\n");
+        // fprintf(stderr, "Parsed def\n");
         if (auto ir = def->codegen(llvms)) {
           ir->print(llvm::errs());
           fprintf(stderr, "\n");
         }
       } else {
-        fprintf(stderr, "Failed to parse...\n");
+        // fprintf(stderr, "Failed to parse...\n");
         lexer.read();
       }
     } break;
@@ -40,7 +40,7 @@ int main() {
       // Handle extern
       PrototypePtr expr = parser.extern_(lexer);
       if (expr) {
-        fprintf(stderr, "Parsed extern\n");
+        // fprintf(stderr, "Parsed extern\n");
         if (auto ir = expr->codegen(llvms)) {
           ir->print(llvm::errs());
           fprintf(stderr, "\n");
@@ -51,11 +51,11 @@ int main() {
     } break;
 
     case Atom::comment: {
-      fprintf(stderr, "Parsed comment\n");
+      // fprintf(stderr, "Parsed comment\n");
     } break;
 
     case Atom::unknown: {
-      fprintf(stderr, "Parsed unknown\n");
+      // fprintf(stderr, "Parsed unknown\n");
     } break;
 
     case Atom::semicolon: {
@@ -65,7 +65,8 @@ int main() {
     default: {
       DefinitionPtr expr = parser.top(lexer);
       if (expr) {
-        fprintf(stderr, "Parsed top-level expression\n");
+        // fprintf(stderr, "Parsed top-level expression till %c\n",
+        //         lexer.current());
         if (auto ir = expr->codegen(llvms)) {
           ir->print(llvm::errs());
           fprintf(stderr, "\n");
@@ -82,5 +83,8 @@ int main() {
     fprintf(stderr, "> ");
     symbol = lexer.read();
   }
+
+  llvms.module().print(llvm::errs(), nullptr);
+
   return 0;
 }

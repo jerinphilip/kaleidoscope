@@ -70,7 +70,7 @@ ExprPtr Parser::identifier(Lexer &lexer) {
       } else {
         lexer.read(); // Consume ','
       }
-      fprintf(stderr, "FnArg: %s", lexer.atom().c_str());
+      // fprintf(stderr, "FnArg: %s", lexer.atom().c_str());
     }
   }
 
@@ -84,7 +84,7 @@ ExprPtr Parser::identifier(Lexer &lexer) {
 ExprPtr Parser::primary(Lexer &lexer) {
   switch (lexer.type()) {
   default:
-    fprintf(stderr, "Unknown token {%s}\n", lexer.atom().c_str());
+    // fprintf(stderr, "Unknown token {%s}\n", lexer.atom().c_str());
     return LogError("Unknown token.");
   case Atom::identifier:
     return identifier(lexer);
@@ -115,7 +115,10 @@ int resolve_precedence(char op) {
 ExprPtr Parser::binOpRHS(Lexer &lexer, int expr_precedence, ExprPtr lhs) {
   while (true) {
     char binOp = lexer.current();
+    // fprintf(stderr, "binOp: %c\n", binOp);
     int precedence = resolve_precedence(binOp);
+    // fprintf(stderr, "binOp-prec: %d, expr-prec: %d\n", precedence,
+    //         expr_precedence);
     if (precedence < expr_precedence) {
       // Case of -1, when we can return just the primary expression.
       return lhs;
@@ -134,6 +137,9 @@ ExprPtr Parser::binOpRHS(Lexer &lexer, int expr_precedence, ExprPtr lhs) {
     // Do we have a binOp behind the rhs?
     char nextBinOp = lexer.current();
     int next_precedence = resolve_precedence(nextBinOp);
+    // fprintf(stderr, "nextBinOp: %c\n", nextBinOp);
+    // fprintf(stderr, "binOp-prec: %d, nextBinOp-prec: %d\n", precedence,
+    //         next_precedence);
 
     if (precedence < next_precedence) {
       // Recursive call, should take care of (op, operand)*
@@ -171,7 +177,7 @@ PrototypePtr Parser::prototype(Lexer &lexer) {
   }
 
   std::string identifier = lexer.atom();
-  fprintf(stderr, "Identifier %s\n", identifier.c_str());
+  // fprintf(stderr, "Identifier %s\n", identifier.c_str());
 
   lexer.read();
   if (lexer.current() != '(') {
@@ -186,7 +192,7 @@ PrototypePtr Parser::prototype(Lexer &lexer) {
   while (lexer.type() == Atom::identifier) {
     std::string arg = lexer.atom();
     args.push_back(arg);
-    fprintf(stderr, "arg: %s\n", arg.c_str());
+    // fprintf(stderr, "arg: %s\n", arg.c_str());
     lexer.read();
   }
 

@@ -31,13 +31,11 @@ public:
 
 private:
   Atom produce(Atom token) {
-    fprintf(stderr, "Producing %s\n", atom_.c_str());
     type_ = token;
     while (isspace(next_)) {
       next_ = getchar();
     }
 
-    fprintf(stderr, "Pointer seeking to %c and waiting...\n", next_);
     return token;
   }
 
