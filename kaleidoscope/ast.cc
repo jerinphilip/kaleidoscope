@@ -48,6 +48,8 @@ Value *BinaryOp::codegen(LLVMStuff &llvms) const {
     return builder.CreateFSub(lhs, rhs, "subtmp");
   case Op::mul:
     return builder.CreateFMul(lhs, rhs, "multmp");
+  case Op::div:
+    return builder.CreateFMul(lhs, rhs, "divtmp");
   case Op::lt:
     lhs = builder.CreateFCmpULT(lhs, rhs, "cmptmp");
     // Convert bool 0/1 to double 0.0 or 1.0
