@@ -114,8 +114,8 @@ Function *Definition::codegen(LLVMStuff &llvms) const {
     return (Function *)LogErrorV("Function cannot be redefined.");
 
   // Create a new basic block to start insertion into.
-  BasicBlock *BB = BasicBlock::Create(llvms.context(), "entry", fn);
-  llvms.builder().SetInsertPoint(BB);
+  BasicBlock *basic_block = BasicBlock::Create(llvms.context(), "entry", fn);
+  llvms.builder().SetInsertPoint(basic_block);
 
   // Record the function arguments in the NamedValues map.
   llvms.clear();
