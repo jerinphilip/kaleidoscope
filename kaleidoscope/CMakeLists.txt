@@ -1,8 +1,4 @@
-
-add_library(kaleidoscope STATIC
-  lexer.cc
-  parser.cc
-  ast.cc)
+add_library(kaleidoscope STATIC lexer.cc parser.cc ast.cc)
 
 target_include_directories(kaleidoscope PUBLIC ${LLVM_INCLUDE_DIRS})
 target_compile_definitions(kaleidoscope PUBLIC ${LLVM_DEFINITIONS})

@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 3.24)
 
 project(kaleidoscope CXX C)
@@ -12,4 +11,3 @@ add_subdirectory(kaleidoscope)
 
 add_executable(main main.cc)
 target_link_libraries(main PRIVATE kaleidoscope)
-
