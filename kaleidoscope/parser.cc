@@ -43,13 +43,13 @@ ExprPtr Parser::paranthesis(Lexer &lexer) {
 //        | identifierName '(' expression* ')'
 ExprPtr Parser::identifier(Lexer &lexer) {
   std::string identifier = lexer.atom();
+  lexer.read(); // Consume identifier
 
-  lexer.read();
   if (lexer.current() != '(') {
     return std::make_unique<Variable>(identifier);
   }
 
-  lexer.read();
+  lexer.read(); // Consume '('
 
   function::ArgExprs args;
   if (lexer.current() != ')') {
@@ -61,18 +61,19 @@ ExprPtr Parser::identifier(Lexer &lexer) {
       }
 
       if (lexer.current() == ')') {
+        lexer.read(); // Consume ')'
         break;
       }
 
       if (lexer.current() != ',') {
         return LogError("Expected ')' or ',' in argument list");
+      } else {
+        lexer.read(); // Consume ','
       }
-
-      lexer.read();
       fprintf(stderr, "FnArg: %s", lexer.atom().c_str());
     }
   }
-  lexer.read();
+
   return std::make_unique<function::Call>(identifier, std::move(args));
 }
 
@@ -191,9 +192,9 @@ PrototypePtr Parser::prototype(Lexer &lexer) {
 
   if (lexer.current() != ')') {
     return LogErrorP("Expected ')' in prototype");
+  } else {
+    lexer.read(); // Consume ')'
   }
-
-  lexer.read();
 
   return std::make_unique<function::Prototype>(identifier, std::move(args));
 }
