@@ -1,4 +1,3 @@
-
 #include "ast.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
@@ -22,11 +21,11 @@ llvm::Value *LogErrorV(const char *str) {
 
 Expr::~Expr() {}
 
-Value *Number::codegen(LLVMStuff &llvms) const {
+Value *Number::codegen(LLVMConnector &llvms) const {
   return ConstantFP::get(llvms.context(), APFloat(value_));
 }
 
-Value *Variable::codegen(LLVMStuff &llvms) const {
+Value *Variable::codegen(LLVMConnector &llvms) const {
   // Look this variable up in the function.
   Value *value = llvms.lookup(name_);
   if (!value)
@@ -34,7 +33,7 @@ Value *Variable::codegen(LLVMStuff &llvms) const {
   return value;
 }
 
-Value *BinaryOp::codegen(LLVMStuff &llvms) const {
+Value *BinaryOp::codegen(LLVMConnector &llvms) const {
   Value *lhs = lhs_->codegen(llvms);
   Value *rhs = rhs_->codegen(llvms);
   if (!lhs || !rhs)
@@ -62,7 +61,7 @@ Value *BinaryOp::codegen(LLVMStuff &llvms) const {
 
 namespace function {
 
-Value *Call::codegen(LLVMStuff &llvms) const {
+Value *Call::codegen(LLVMConnector &llvms) const {
   // Look up the name in the global module table.
   Function *fn = llvms.module().getFunction(name_);
   if (!fn)
@@ -82,7 +81,7 @@ Value *Call::codegen(LLVMStuff &llvms) const {
   return llvms.builder().CreateCall(fn, arg_values, "calltmp");
 }
 
-Function *Prototype::codegen(LLVMStuff &llvms) const {
+Function *Prototype::codegen(LLVMConnector &llvms) const {
   // Make the function type:  double(double,double) etc.
   std::vector<Type *> Doubles(args_.size(), Type::getDoubleTy(llvms.context()));
   FunctionType *function_type =
@@ -100,7 +99,7 @@ Function *Prototype::codegen(LLVMStuff &llvms) const {
   return fn;
 }
 
-Function *Definition::codegen(LLVMStuff &llvms) const {
+Function *Definition::codegen(LLVMConnector &llvms) const {
   // First, check for an existing function from a previous 'extern' declaration.
   Function *fn = llvms.module().getFunction(prototype_->name());
 

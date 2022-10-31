@@ -1,5 +1,6 @@
 
 #include "kaleidoscope/lexer.h"
+#include "kaleidoscope/llvm_connector.h"
 #include "kaleidoscope/parser.h"
 #include <cstdio>
 
@@ -7,7 +8,7 @@ int main() {
   Lexer lexer;
   Parser parser;
 
-  LLVMStuff llvms("kaleidoscope");
+  LLVMConnector llvms("kaleidoscope");
 
   fprintf(stderr, "> ");
   Atom symbol = lexer.read();
