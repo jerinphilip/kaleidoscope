@@ -48,4 +48,9 @@ public:
 
   /// if = `if` expression `then` expression `else` expression
   ExprPtr if_then_else(Lexer &lexer);
+
+  /// for =
+  ///     | `for` identifier = expr, expr [, expr]  `in` expr
+  ///
+  ExprPtr for_in(Lexer &lexer);
 };

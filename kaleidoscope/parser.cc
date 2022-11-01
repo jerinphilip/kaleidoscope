@@ -1,5 +1,6 @@
 #include "parser.h"
 #include "ast.h"
+#include <memory>
 
 ExprPtr LogError(const char *message) {
   fprintf(stderr, "LogError: %s\n", message);
@@ -271,4 +272,58 @@ ExprPtr Parser::if_then_else(Lexer &lexer) {
 
   return std::make_unique<IfThenElse>(std::move(condition), std::move(then),
                                       std::move(otherwise));
+}
+
+ExprPtr Parser::for_in(Lexer &lexer) {
+  lexer.read(); // consume `for`.
+
+  if (lexer.type() != Atom::identifier) {
+    return LogError("expected identifier after `for`");
+  }
+
+  std::string identifier = lexer.atom();
+  lexer.read(); // consume identifier.
+
+  if (lexer.current() != '=')
+    return LogError("expected '=' after for");
+  lexer.read(); // consume '='.
+
+  auto start = expression(lexer);
+  if (!start) {
+    return nullptr;
+  }
+
+  if (lexer.current() != ',') {
+    return LogError("expected ',' after for start value");
+  }
+
+  lexer.read();
+
+  auto end = expression(lexer);
+  if (!end) {
+    return nullptr;
+  }
+
+  // The step value is optional.
+  ExprPtr step = nullptr;
+  if (lexer.current() == ',') {
+    lexer.read();
+    step = expression(lexer);
+    if (!step) {
+      return nullptr;
+    }
+  }
+
+  if (lexer.type() != Atom::keyword_in) {
+    return LogError("expected 'in' after for");
+  }
+  lexer.read(); // consume 'in'.
+
+  auto body = expression(lexer);
+  if (!body) {
+    return nullptr;
+  }
+
+  return std::make_unique<For>(identifier, std::move(start), std::move(end),
+                               std::move(step), std::move(body));
 }
