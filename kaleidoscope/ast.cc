@@ -8,6 +8,7 @@
 
 using llvm::APFloat;
 using llvm::BasicBlock;
+using llvm::Constant;
 using llvm::ConstantFP;
 using llvm::Function;
 using llvm::FunctionType;
@@ -196,4 +197,84 @@ Value *IfThenElse::codegen(LLVMConnector &llvms) const {
   return phi_node;
 }
 
-llvm::Value *For::codegen(LLVMConnector &llvms) const { return nullptr; }
+llvm::Value *For::codegen(LLVMConnector &llvms) const {
+  // Emit the start code first, without 'variable' in scope.
+  Value *start_value = start_->codegen(llvms);
+  if (!start_value)
+    return nullptr;
+
+  auto &builder = llvms.builder();
+  auto &context = llvms.context();
+
+  // Make the new basic block for the loop header, inserting after current
+  // block.
+  Function *fn = builder.GetInsertBlock()->getParent();
+  BasicBlock *pre_header_block = builder.GetInsertBlock();
+  BasicBlock *loop_block = BasicBlock::Create(context, "loop", fn);
+
+  // Insert an explicit fall through from the current block to the LoopBB.
+  builder.CreateBr(loop_block);
+
+  // Start insertion in LoopBB.
+  builder.SetInsertPoint(loop_block);
+
+  // Start the PHI node with an entry for start_.
+  PHINode *variable = builder.CreatePHI(Type::getDoubleTy(context), 2, var_);
+  variable->addIncoming(start_value, pre_header_block);
+
+  // Within the loop, the variable is defined equal to the PHI node.  If it
+  // shadows an existing variable, we have to restore it, so save it now.
+  Value *old_value = llvms.lookup(var_);
+  llvms.set(var_, variable);
+
+  // Emit the body of the loop.  This, like any other expr, can change the
+  // current BB.  Note that we ignore the value computed by the body, but don't
+  // allow an error.
+  if (!body_->codegen(llvms))
+    return nullptr;
+
+  // Emit the step value.
+  Value *step_value = nullptr;
+  if (step_) {
+    step_value = step_->codegen(llvms);
+    if (!step_value)
+      return nullptr;
+  } else {
+    // If not specified, use 1.0.
+    step_value = ConstantFP::get(context, APFloat(1.0));
+  }
+
+  Value *next_var = builder.CreateFAdd(variable, step_value, "nextvar");
+
+  // Compute the end condition.
+  Value *end_condition = end_->codegen(llvms);
+  if (!end_condition)
+    return nullptr;
+
+  // Convert condition to a bool by comparing non-equal to 0.0.
+  end_condition = builder.CreateFCmpONE(
+      end_condition, ConstantFP::get(context, APFloat(0.0)), "loopcond");
+
+  // Create the "after loop" block and insert it.
+  BasicBlock *loop_end_block = builder.GetInsertBlock();
+  BasicBlock *after_block = BasicBlock::Create(context, "afterloop", fn);
+
+  // Insert the conditional branch into the end of LoopEndBB.
+  builder.CreateCondBr(end_condition, loop_end_block, after_block);
+
+  // Any new code will be inserted in AfterBB.
+  builder.SetInsertPoint(after_block);
+
+  // Add a new entry to the PHI node for the backedge.
+  variable->addIncoming(next_var, loop_end_block);
+
+  // Restore the unshadowed variable.
+  if (old_value) {
+    llvms.set(var_, old_value);
+  } else {
+    llvms.erase(var_);
+  }
+
+  // for expr always returns 0.0.
+  return Constant::getNullValue(Type::getDoubleTy(context));
+}
