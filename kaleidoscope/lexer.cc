@@ -31,6 +31,18 @@ Atom Lexer::read() {
       return produce(Atom::keyword_extern);
     }
 
+    if (atom_ == "if") {
+      return produce(Atom::keyword_if);
+    }
+
+    if (atom_ == "then") {
+      return produce(Atom::keyword_then);
+    }
+
+    if (atom_ == "else") {
+      return produce(Atom::keyword_else);
+    }
+
     return produce(Atom::identifier);
   }
 
