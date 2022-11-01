@@ -114,3 +114,21 @@ private:
   ExprPtr then_;
   ExprPtr otherwise_;
 };
+
+class For : public Expr {
+public:
+  For(std::string var, ExprPtr start, ExprPtr end, ExprPtr step, ExprPtr body)
+      : var_(std::move(var)), start_(std::move(start)), end_(std::move(end)),
+        step_(std::move(step)), body_(std::move(body)) {}
+
+  llvm::Value *codegen(LLVMConnector &llvms) const final;
+
+private:
+  std::string var_;
+
+  ExprPtr start_;
+  ExprPtr end_;
+  ExprPtr step_;
+
+  ExprPtr body_;
+};

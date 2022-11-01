@@ -195,3 +195,5 @@ Value *IfThenElse::codegen(LLVMConnector &llvms) const {
 
   return phi_node;
 }
+
+llvm::Value *For::codegen(LLVMConnector &llvms) const { return nullptr; }
