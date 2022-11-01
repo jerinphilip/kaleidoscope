@@ -92,6 +92,8 @@ ExprPtr Parser::primary(Lexer &lexer) {
     return number(lexer);
   case Atom::open:
     return paranthesis(lexer);
+  case Atom::keyword_if:
+    return if_then_else(lexer);
   }
 }
 
@@ -235,4 +237,38 @@ DefinitionPtr Parser::top(Lexer &lexer) {
 PrototypePtr Parser::extern_(Lexer &lexer) {
   lexer.read();
   return prototype(lexer);
+}
+
+ExprPtr Parser::if_then_else(Lexer &lexer) {
+  lexer.read(); // Consume `if`.
+  ExprPtr condition = expression(lexer);
+
+  if (!condition) {
+    return nullptr;
+  }
+
+  if (lexer.type() != Atom::keyword_then) {
+    return LogError("Expected `then`");
+  }
+
+  lexer.read(); // Consume `then`.
+  ExprPtr then = expression(lexer);
+  if (!then) {
+    return nullptr;
+  }
+
+  if (lexer.type() != Atom::keyword_else) {
+    return LogError("Expected `else`");
+  }
+
+  lexer.read(); // Consume `else`.
+
+  ExprPtr otherwise = expression(lexer);
+
+  if (!otherwise) {
+    return nullptr;
+  }
+
+  return std::make_unique<IfThenElse>(std::move(condition), std::move(then),
+                                      std::move(otherwise));
 }

@@ -100,3 +100,17 @@ private:
   ArgExprs args_;
 };
 } // namespace function
+
+class IfThenElse : public Expr {
+public:
+  IfThenElse(ExprPtr condition, ExprPtr then, ExprPtr otherwise)
+      : condition_(std::move(condition)), then_(std::move(then)),
+        otherwise_(std::move(otherwise)) {}
+
+  llvm::Value *codegen(LLVMConnector &llvms) const final;
+
+private:
+  ExprPtr condition_;
+  ExprPtr then_;
+  ExprPtr otherwise_;
+};

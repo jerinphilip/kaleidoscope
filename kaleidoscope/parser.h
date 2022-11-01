@@ -45,4 +45,7 @@ public:
 
   /// top = expression
   DefinitionPtr top(Lexer &lexer);
+
+  /// if = `if` expression `then` expression `else` expression
+  ExprPtr if_then_else(Lexer &lexer);
 };

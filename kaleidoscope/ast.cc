@@ -140,3 +140,58 @@ Function *Definition::codegen(LLVMConnector &llvms) const {
 }
 
 } // namespace function
+
+Value *IfThenElse::codegen(LLVMConnector &llvms) const {
+  Value *condition_value = condition_->codegen(llvms);
+  if (!condition_value) {
+    return nullptr;
+  }
+
+  auto &builder = llvms.builder();
+  auto &context = llvms.context();
+
+  condition_value = builder.CreateFCmpONE(
+      condition_value, ConstantFP::get(context, APFloat(0.0)), "ifcond");
+
+  Function *fn = builder.GetInsertBlock()->getParent();
+
+  BasicBlock *then_block = BasicBlock::Create(context, "then", fn);
+  BasicBlock *otherwise_block = BasicBlock::Create(context, "else");
+  BasicBlock *merge_block = BasicBlock::Create(context, "ifcont");
+
+  llvms.builder().CreateCondBr(condition_value, then_block, otherwise_block);
+
+  // Emit otherwise value.
+  llvms.builder().SetInsertPoint(then_block);
+  Value *then_value = then_->codegen(llvms);
+
+  if (!then_value) {
+    return nullptr;
+  }
+
+  builder.CreateBr(merge_block);
+
+  then_block = builder.GetInsertBlock();
+
+  fn->getBasicBlockList().push_back(otherwise_block);
+  builder.SetInsertPoint(otherwise_block);
+
+  Value *otherwise_value = otherwise_->codegen(llvms);
+  if (!otherwise_value) {
+    return nullptr;
+  }
+
+  builder.CreateBr(merge_block);
+  otherwise_block = builder.GetInsertBlock();
+
+  fn->getBasicBlockList().push_back(merge_block);
+  builder.SetInsertPoint(merge_block);
+
+  llvm::PHINode *phi_node =
+      builder.CreatePHI(Type::getDoubleTy(context), 2, "iftmp");
+
+  phi_node->addIncoming(then_value, then_block);
+  phi_node->addIncoming(otherwise_value, otherwise_block);
+
+  return phi_node;
+}
