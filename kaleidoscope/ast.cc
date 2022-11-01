@@ -11,6 +11,7 @@ using llvm::BasicBlock;
 using llvm::ConstantFP;
 using llvm::Function;
 using llvm::FunctionType;
+using llvm::PHINode;
 using llvm::Type;
 using llvm::Value;
 
@@ -187,8 +188,7 @@ Value *IfThenElse::codegen(LLVMConnector &llvms) const {
   fn->getBasicBlockList().push_back(merge_block);
   builder.SetInsertPoint(merge_block);
 
-  llvm::PHINode *phi_node =
-      builder.CreatePHI(Type::getDoubleTy(context), 2, "iftmp");
+  PHINode *phi_node = builder.CreatePHI(Type::getDoubleTy(context), 2, "iftmp");
 
   phi_node->addIncoming(then_value, then_block);
   phi_node->addIncoming(otherwise_value, otherwise_block);
