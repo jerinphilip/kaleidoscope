@@ -7,9 +7,9 @@
 
 enum class Atom {
   eof,
-  def,
-  extern_,
   identifier,
+  keyword_def,
+  keyword_extern,
   number,
   semicolon,
   comment,

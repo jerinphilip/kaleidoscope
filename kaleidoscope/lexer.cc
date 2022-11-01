@@ -24,11 +24,11 @@ Atom Lexer::read() {
     }
 
     if (atom_ == "def") {
-      return produce(Atom::def);
+      return produce(Atom::keyword_def);
     }
 
     if (atom_ == "extern") {
-      return produce(Atom::extern_);
+      return produce(Atom::keyword_extern);
     }
 
     return produce(Atom::identifier);

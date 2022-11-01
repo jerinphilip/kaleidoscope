@@ -21,7 +21,7 @@ int main() {
       return 0;
     } break;
 
-    case Atom::def: {
+    case Atom::keyword_def: {
       // Handle definition
       // fprintf(stderr, "Attempting to parse def ....\n");
       DefinitionPtr def = parser.definition(lexer);
@@ -37,7 +37,7 @@ int main() {
       }
     } break;
 
-    case Atom::extern_: {
+    case Atom::keyword_extern: {
       // Handle extern
       PrototypePtr expr = parser.extern_(lexer);
       if (expr) {
