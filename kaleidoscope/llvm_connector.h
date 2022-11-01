@@ -28,6 +28,8 @@ public:
     return query->second;
   }
 
+  void erase(const std::string &name) { named_values_.erase(name); }
+
   void set(const std::string &name, llvm::Value *value) {
     named_values_[name] = value;
   }
