@@ -43,6 +43,14 @@ Atom Lexer::read() {
       return produce(Atom::keyword_else);
     }
 
+    if (atom_ == "for") {
+      return produce(Atom::keyword_for);
+    }
+
+    if (atom_ == "in") {
+      return produce(Atom::keyword_in);
+    }
+
     return produce(Atom::identifier);
   }
 
