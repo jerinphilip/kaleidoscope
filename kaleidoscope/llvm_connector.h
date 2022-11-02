@@ -37,8 +37,16 @@ public:
   void clear() { named_values_.clear(); }
 
 private:
+  /// Global context for LLVM book-keeping.
   llvm::LLVMContext context_;
+
+  /// Entity housing created LLVM entities (say an LLVM::Value) or something.
+  /// Externally we only supply pointers to objects owned by the Module.
+  /// In some sense, contains the code we build using C++ constructs to be
+  /// generated as LLVM IR later.
   llvm::Module module_;
+
+  /// Convenience class to build LLVM IR objects by means of composition.
   llvm::IRBuilder<> builder_;
   std::map<std::string, llvm::Value *> named_values_;
 };

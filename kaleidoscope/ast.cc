@@ -54,6 +54,16 @@ Value *BinaryOp::codegen(LLVMConnector &llvms) const {
   case Op::lt:
     lhs = builder.CreateFCmpULT(lhs, rhs, "cmptmp");
     // Convert bool 0/1 to double 0.0 or 1.0
+    //
+    // On the other hand, LLVM specifies that the fcmp instruction always
+    // returns an ‘i1’ value (a one bit integer). The problem with this is that
+    // Kaleidoscope wants the value to be a 0.0 or 1.0 value. In order to get
+    // these semantics, we combine the fcmp instruction with a uitofp
+    // instruction. This instruction converts its input integer into a floating
+    // point value by treating the input as an unsigned value. In contrast, if
+    // we used the sitofp instruction, the Kaleidoscope ‘<’ operator would
+    // return 0.0 and -1.0, depending on the input value.
+
     return builder.CreateUIToFP(lhs, Type::getDoubleTy(llvms.context()),
                                 "booltmp");
   default:
@@ -86,8 +96,8 @@ Value *Call::codegen(LLVMConnector &llvms) const {
 Function *Prototype::codegen(LLVMConnector &llvms) const {
   // Make the function type:  double(double,double) etc.
   std::vector<Type *> Doubles(args_.size(), Type::getDoubleTy(llvms.context()));
-  FunctionType *function_type =
-      FunctionType::get(Type::getDoubleTy(llvms.context()), Doubles, false);
+  FunctionType *function_type = FunctionType::get(
+      Type::getDoubleTy(llvms.context()), Doubles, /*vararg=*/false);
 
   Function *fn = Function::Create(function_type, Function::ExternalLinkage,
                                   name_, llvms.module());
@@ -130,7 +140,9 @@ Function *Definition::codegen(LLVMConnector &llvms) const {
     // Finish off the function.
     llvms.builder().CreateRet(RetVal);
 
-    // Validate the generated code, checking for consistency.
+    // This function does a variety of consistency checks on the generated code,
+    // to determine if our compiler is doing everything right. Using this is
+    // important: it can catch a lot of bugs.
     verifyFunction(*fn);
 
     return fn;
