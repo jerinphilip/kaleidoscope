@@ -7,7 +7,6 @@
 int main() {
   Lexer lexer;
   Parser parser;
-
   LLVMConnector llvms("kaleidoscope");
 
   fprintf(stderr, "> ");
@@ -15,7 +14,6 @@ int main() {
   while (symbol != Atom::eof) {
 
     switch (symbol) {
-
     case Atom::eof: {
       fprintf(stderr, "Parsed EOF\n");
       return 0;

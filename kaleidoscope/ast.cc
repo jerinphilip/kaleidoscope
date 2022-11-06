@@ -6,6 +6,7 @@
 #include "llvm/IR/Value.h"
 #include "llvm/IR/Verifier.h"
 
+using llvm::AllocaInst;
 using llvm::APFloat;
 using llvm::BasicBlock;
 using llvm::Constant;
@@ -29,10 +30,14 @@ Value *Number::codegen(LLVMConnector &llvms) const {
 
 Value *Variable::codegen(LLVMConnector &llvms) const {
   // Look this variable up in the function.
-  Value *value = llvms.lookup(name_);
-  if (!value)
+  AllocaInst *alloca_inst = llvms.lookup(name_);
+  if (!alloca_inst)
     LogErrorV("Unknown variable name");
-  return value;
+
+  // Load the value
+  auto &builder = llvms.builder();
+  return builder.CreateLoad(alloca_inst->getAllocatedType(), alloca_inst,
+                            name_.c_str());
 }
 
 Value *BinaryOp::codegen(LLVMConnector &llvms) const {
@@ -126,19 +131,24 @@ Function *Definition::codegen(LLVMConnector &llvms) const {
 
   // Create a new basic block to start insertion into.
   BasicBlock *basic_block = BasicBlock::Create(llvms.context(), "entry", fn);
-  llvms.builder().SetInsertPoint(basic_block);
+
+  auto &builder = llvms.builder();
+  builder.SetInsertPoint(basic_block);
 
   // Record the function arguments in the NamedValues map.
   llvms.clear();
   for (auto &arg : fn->args()) {
     llvm::StringRef nameRef = arg.getName();
     std::string name(nameRef.data(), nameRef.size());
-    llvms.set(name, &arg);
+
+    AllocaInst *alloca = llvms.create_entry_block_alloca(fn, name);
+    builder.CreateStore(&arg, alloca);
+    llvms.set(name, alloca);
   }
 
   if (Value *RetVal = body_->codegen(llvms)) {
     // Finish off the function.
-    llvms.builder().CreateRet(RetVal);
+    builder.CreateRet(RetVal);
 
     // This function does a variety of consistency checks on the generated code,
     // to determine if our compiler is doing everything right. Using this is
@@ -210,18 +220,24 @@ Value *IfThenElse::codegen(LLVMConnector &llvms) const {
 }
 
 llvm::Value *For::codegen(LLVMConnector &llvms) const {
+  auto &builder = llvms.builder();
+  Function *fn = builder.GetInsertBlock()->getParent();
+
   // Emit the start code first, without 'variable' in scope.
+  AllocaInst *alloca = llvms.create_entry_block_alloca(fn, var_);
+
   Value *start_value = start_->codegen(llvms);
   if (!start_value)
     return nullptr;
 
-  auto &builder = llvms.builder();
   auto &context = llvms.context();
 
   // Make the new basic block for the loop header, inserting after current
   // block.
-  Function *fn = builder.GetInsertBlock()->getParent();
+  builder.CreateStore(start_value, alloca);
+
   BasicBlock *pre_header_block = builder.GetInsertBlock();
+
   BasicBlock *loop_block = BasicBlock::Create(context, "loop", fn);
 
   // Insert an explicit fall through from the current block to the LoopBB.
@@ -236,8 +252,8 @@ llvm::Value *For::codegen(LLVMConnector &llvms) const {
 
   // Within the loop, the variable is defined equal to the PHI node.  If it
   // shadows an existing variable, we have to restore it, so save it now.
-  Value *old_value = llvms.lookup(var_);
-  llvms.set(var_, variable);
+  AllocaInst *old_value = llvms.lookup(var_);
+  llvms.set(var_, alloca);
 
   // Emit the body of the loop.  This, like any other expr, can change the
   // current BB.  Note that we ignore the value computed by the body, but don't
@@ -256,7 +272,11 @@ llvm::Value *For::codegen(LLVMConnector &llvms) const {
     step_value = ConstantFP::get(context, APFloat(1.0));
   }
 
+  Value *current_var =
+      builder.CreateLoad(alloca->getAllocatedType(), alloca, var_.c_str());
   Value *next_var = builder.CreateFAdd(variable, step_value, "nextvar");
+
+  builder.CreateStore(next_var, alloca);
 
   // Compute the end condition.
   Value *end_condition = end_->codegen(llvms);
