@@ -58,5 +58,5 @@ private:
   Atom type_;
 };
 
-static std::map<char, int> OP_PRECEDENCE = {
-    {'<', 10}, {'+', 20}, {'-', 20}, {'*', 40}, {'/', 40}};
+static std::map<char, int> OP_PRECEDENCE = {{'=', 2},  {'<', 10}, {'+', 20},
+                                            {'-', 20}, {'*', 40}, {'/', 40}};
