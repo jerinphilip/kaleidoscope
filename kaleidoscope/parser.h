@@ -53,4 +53,10 @@ public:
   ///     | `for` identifier = expr, expr [, expr]  `in` expr
   ///
   ExprPtr for_in(Lexer &lexer);
+
+  /// varExpr := `var` identifer
+  ///               ('=' expression)?
+  ///               (',' identifier '=' expression)?*
+  ///               `in` expression
+  ExprPtr var(Lexer &lexer);
 };

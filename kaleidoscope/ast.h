@@ -36,6 +36,18 @@ private:
   std::string name_;
 };
 
+class VarIn : public Expr {
+public:
+  using Assignment = std::pair<std::string, ExprPtr>;
+  VarIn(std::vector<Assignment> assignments, ExprPtr body)
+      : assignments_(std::move(assignments)), body_(std::move(body)) {}
+  llvm::Value *codegen(LLVMConnector &llvms) const final;
+
+private:
+  std::vector<Assignment> assignments_;
+  ExprPtr body_;
+};
+
 class BinaryOp : public Expr {
 public:
   BinaryOp(Op op, ExprPtr lhs, ExprPtr rhs)

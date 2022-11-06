@@ -51,6 +51,10 @@ Atom Lexer::read() {
       return produce(Atom::keyword_in);
     }
 
+    if (atom_ == "var") {
+      return produce(Atom::keyword_var);
+    }
+
     return produce(Atom::identifier);
   }
 

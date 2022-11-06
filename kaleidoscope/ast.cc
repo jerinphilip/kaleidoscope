@@ -40,6 +40,49 @@ Value *Variable::codegen(LLVMConnector &llvms) const {
                             name_.c_str());
 }
 
+Value *VarIn::codegen(LLVMConnector &llvms) const {
+  // Look this variable up in the function.
+  std::vector<AllocaInst *> old_bindings;
+
+  auto &builder = llvms.builder();
+
+  Function *fn = builder.GetInsertBlock()->getParent();
+
+  // Register all variables - emit initializer
+  for (const auto &assignment : assignments_) {
+    const std::string &name = assignment.first;
+    Expr *init = (assignment.second).get();
+
+    Value *init_value;
+    if (init) {
+      init_value = init->codegen(llvms);
+      if (!init_value) {
+        return nullptr;
+      }
+    } else {
+      init_value = ConstantFP::get(llvms.context(), APFloat(0.0));
+    }
+
+    AllocaInst *alloca = llvms.create_entry_block_alloca(fn, name);
+    builder.CreateStore(init_value, alloca);
+
+    old_bindings.push_back(llvms.lookup(name));
+    llvms.set(name, alloca);
+  }
+
+  Value *body_value = body_->codegen(llvms);
+  if (!body_value) {
+    return nullptr;
+  }
+
+  for (size_t i = 0; i < assignments_.size(); i++) {
+    const std::string &name = assignments_[i].first;
+    llvms.set(name, old_bindings[i]);
+  }
+
+  return body_value;
+}
+
 Value *BinaryOp::codegen(LLVMConnector &llvms) const {
   Value *lhs = lhs_->codegen(llvms);
   Value *rhs = rhs_->codegen(llvms);

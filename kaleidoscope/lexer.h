@@ -15,6 +15,7 @@ enum class Atom {
   keyword_else,
   keyword_for,
   keyword_in,
+  keyword_var,
   number,
   semicolon,
   comment,

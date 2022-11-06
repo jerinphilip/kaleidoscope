@@ -99,6 +99,8 @@ ExprPtr Parser::primary(Lexer &lexer) {
     return if_then_else(lexer);
   case Atom::keyword_for:
     return for_in(lexer);
+  case Atom::keyword_var:
+    return var(lexer);
   }
 }
 
@@ -330,4 +332,58 @@ ExprPtr Parser::for_in(Lexer &lexer) {
 
   return std::make_unique<For>(identifier, std::move(start), std::move(end),
                                std::move(step), std::move(body));
+}
+
+ExprPtr Parser::var(Lexer &lexer) {
+  lexer.read(); // consume `var`.
+  std::vector<VarIn::Assignment> assignments;
+
+  if (lexer.type() != Atom::identifier) {
+    return LogError("Expected at least one identifier.");
+  }
+
+  // Read the variable name and assignment list.
+  while (true) {
+    std::string identifier = lexer.atom();
+    lexer.read(); // consume identifier.
+
+    // Optional initializer.
+    ExprPtr init;
+    if (lexer.current() == '=') {
+      // Consume `=`
+      lexer.read();
+      init = expression(lexer);
+
+      if (!init) {
+        return nullptr;
+      }
+    }
+
+    assignments.push_back(std::make_pair(identifier, std::move(init)));
+
+    // Do we have more comma separated variables?
+    // If not, break.
+    if (lexer.current() != ',') {
+      break;
+    }
+
+    lexer.read(); // Consume the `,`
+    if (lexer.type() != Atom::identifier) {
+      return LogError("Expected identifier list after `var`.");
+    }
+  }
+
+  // Read `in` expression to follow.
+  if (lexer.type() != Atom::keyword_in) {
+    return LogError("Expected `in` keyword after `var`");
+  }
+
+  ExprPtr body = expression(lexer);
+  if (!body) {
+    return nullptr;
+  }
+
+  return std::make_unique<VarIn>(std::move(assignments), std::move(body));
+
+  return nullptr;
 }
