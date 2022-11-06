@@ -4,19 +4,14 @@
 #include "kaleidoscope/parser.h"
 #include <cstdio>
 
-int main() {
-  Lexer lexer;
-  Parser parser;
-  LLVMConnector llvms("kaleidoscope");
-
-  fprintf(stderr, "> ");
+void main_loop(Lexer &lexer, Parser &parser, LLVMConnector &llvms) {
   Atom symbol = lexer.read();
   while (symbol != Atom::eof) {
 
     switch (symbol) {
     case Atom::eof: {
       fprintf(stderr, "Parsed EOF\n");
-      return 0;
+      return;
     } break;
 
     case Atom::keyword_def: {
@@ -82,7 +77,15 @@ int main() {
     fprintf(stderr, "> ");
     symbol = lexer.read();
   }
+}
 
+int main() {
+  Lexer lexer;
+  Parser parser;
+  LLVMConnector llvms("kaleidoscope");
+
+  fprintf(stderr, "> ");
+  main_loop(lexer, parser, llvms);
   llvms.module().print(llvm::errs(), nullptr);
 
   return 0;
