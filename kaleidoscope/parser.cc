@@ -82,6 +82,9 @@ ExprPtr Parser::identifier(Lexer &lexer) {
 //       | identifierExpr
 //       | numberExpr
 //       | paranthesisExpr
+//       | ifExpr
+//       | forExpr
+//       | varExpr
 ExprPtr Parser::primary(Lexer &lexer) {
   switch (lexer.type()) {
   default:
