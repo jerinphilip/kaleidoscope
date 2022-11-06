@@ -86,7 +86,9 @@ ExprPtr Parser::primary(Lexer &lexer) {
   switch (lexer.type()) {
   default:
     // fprintf(stderr, "Unknown token {%s}\n", lexer.atom().c_str());
-    return LogError("Unknown token.");
+    char error_buffer[100];
+    snprintf(error_buffer, 100, "Unknown token {%s}", lexer.atom().c_str());
+    return LogError(error_buffer);
   case Atom::identifier:
     return identifier(lexer);
   case Atom::number:
@@ -95,6 +97,8 @@ ExprPtr Parser::primary(Lexer &lexer) {
     return paranthesis(lexer);
   case Atom::keyword_if:
     return if_then_else(lexer);
+  case Atom::keyword_for:
+    return for_in(lexer);
   }
 }
 
