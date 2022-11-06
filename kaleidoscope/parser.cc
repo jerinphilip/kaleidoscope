@@ -381,6 +381,8 @@ ExprPtr Parser::var(Lexer &lexer) {
     return LogError("Expected `in` keyword after `var`");
   }
 
+  lexer.read(); // Consume `in`.
+
   ExprPtr body = expression(lexer);
   if (!body) {
     return nullptr;
