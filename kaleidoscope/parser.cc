@@ -95,6 +95,8 @@ ExprPtr Parser::primary(Lexer &lexer) {
     return paranthesis(lexer);
   case Atom::keyword_if:
     return if_then_else(lexer);
+  case Atom::keyword_for:
+    return for_in(lexer);
   }
 }
 
