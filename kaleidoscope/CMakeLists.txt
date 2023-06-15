@@ -19,3 +19,4 @@ execute_process(COMMAND llvm-config --libs all
                 ERROR_STRIP_TRAILING_WHITESPACE)
 
 target_link_libraries(kaleidoscope PUBLIC ${llvm_libraries})
+target_include_directories(kaleidoscope PUBLIC ${CMAKE_SOURCE_DIR})

@@ -104,51 +104,51 @@ int main() {
   InitializeAllAsmParsers();
   InitializeAllAsmPrinters();
 
-  auto TargetTriple = sys::getDefaultTargetTriple();
-  llvms.module().setTargetTriple(TargetTriple);
+  auto target_triple = sys::getDefaultTargetTriple();
+  llvms.module().setTargetTriple(target_triple);
 
   std::string Error;
-  auto Target = TargetRegistry::lookupTarget(TargetTriple, Error);
+  auto target = TargetRegistry::lookupTarget(target_triple, Error);
 
   // Print an error and exit if we couldn't find the requested target.
   // This generally occurs if we've forgotten to initialise the
   // TargetRegistry or we have a bogus target triple.
-  if (!Target) {
+  if (!target) {
     errs() << Error;
     return 1;
   }
 
-  auto CPU = "generic";
-  auto Features = "";
+  auto cpu = "generic";
+  auto features = "";
 
-  TargetOptions opt;
-  auto RM = Optional<Reloc::Model>();
-  auto TheTargetMachine =
-      Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
+  TargetOptions target_options;
+  auto relocation_model = Optional<Reloc::Model>();
+  auto target_machine = target->createTargetMachine(
+      target_triple, cpu, features, target_options, relocation_model);
 
-  llvms.module().setDataLayout(TheTargetMachine->createDataLayout());
+  llvms.module().setDataLayout(target_machine->createDataLayout());
 
-  auto Filename = "output.o";
-  std::error_code EC;
-  raw_fd_ostream dest(Filename, EC, sys::fs::OF_None);
+  auto filename = "output.o";
+  std::error_code error_code;
+  raw_fd_ostream dest(filename, error_code, sys::fs::OF_None);
 
-  if (EC) {
-    errs() << "Could not open file: " << EC.message();
+  if (error_code) {
+    errs() << "Could not open file: " << error_code.message();
     return 1;
   }
 
   legacy::PassManager pass;
-  auto FileType = CGFT_ObjectFile;
+  auto filetype = CGFT_ObjectFile;
 
-  if (TheTargetMachine->addPassesToEmitFile(pass, dest, nullptr, FileType)) {
-    errs() << "TheTargetMachine can't emit a file of this type";
+  if (target_machine->addPassesToEmitFile(pass, dest, nullptr, filetype)) {
+    errs() << "target_machine can't emit a file of this type";
     return 1;
   }
 
   pass.run(llvms.module());
   dest.flush();
 
-  outs() << "Wrote " << Filename << "\n";
+  outs() << "Wrote " << filename << "\n";
 
   return 0;
 }
