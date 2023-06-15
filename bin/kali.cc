@@ -12,7 +12,7 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
 
-void main_loop(Lexer &lexer, Parser &parser, LLVMConnector &llvms) {
+void repl(Lexer &lexer, Parser &parser, LLVMConnector &llvms) {
   fprintf(stderr, "> ");
   Atom symbol = lexer.read();
   while (symbol != Atom::eof) {
@@ -92,65 +92,65 @@ int main() {
   Lexer lexer;
   Parser parser;
   LLVMConnector llvms("kaleidoscope");
-  auto &module = llvms.module();
+  llvm::Module &module = llvms.module();
 
-  main_loop(lexer, parser, llvms);
+  repl(lexer, parser, llvms);
+
   module.print(llvm::errs(), nullptr);
 
   // Initialize the target registry etc.
-  using namespace llvm;
-  InitializeAllTargetInfos();
-  InitializeAllTargets();
-  InitializeAllTargetMCs();
-  InitializeAllAsmParsers();
-  InitializeAllAsmPrinters();
+  llvm::InitializeAllTargetInfos();
+  llvm::InitializeAllTargets();
+  llvm::InitializeAllTargetMCs();
+  llvm::InitializeAllAsmParsers();
+  llvm::InitializeAllAsmPrinters();
 
-  auto target_triple = sys::getDefaultTargetTriple();
+  std::string target_triple = llvm::sys::getDefaultTargetTriple();
   module.setTargetTriple(target_triple);
 
   std::string Error;
-  auto target = TargetRegistry::lookupTarget(target_triple, Error);
+  auto target = llvm::TargetRegistry::lookupTarget(target_triple, Error);
 
   // Print an error and exit if we couldn't find the requested target.
   // This generally occurs if we've forgotten to initialise the
   // TargetRegistry or we have a bogus target triple.
   if (!target) {
-    errs() << Error;
+    llvm::errs() << Error;
     return 1;
   }
 
-  auto cpu = "generic";
-  auto features = "";
+  std::string cpu = "generic";
+  std::string features = "";
 
-  TargetOptions target_options;
-  auto relocation_model = Optional<Reloc::Model>();
-  auto target_machine = target->createTargetMachine(
+  llvm::TargetOptions target_options;
+  llvm::Optional<llvm::Reloc::Model> relocation_model;
+  llvm::TargetMachine *target_machine = target->createTargetMachine(
       target_triple, cpu, features, target_options, relocation_model);
 
-  auto data_layout = target_machine->createDataLayout();
+  llvm::DataLayout data_layout = target_machine->createDataLayout();
   module.setDataLayout(data_layout);
 
-  auto filename = "output.o";
+  std::string filename = "output.o";
   std::error_code error_code;
-  raw_fd_ostream dest(filename, error_code, sys::fs::OF_None);
+  llvm::raw_fd_ostream dest(filename, error_code, llvm::sys::fs::OF_None);
 
   if (error_code) {
-    errs() << "Could not open file: " << error_code.message();
+    llvm::errs() << "Could not open file: " << error_code.message();
     return 1;
   }
 
-  legacy::PassManager pass;
-  auto filetype = CGFT_ObjectFile;
+  llvm::legacy::PassManager pass;
+  llvm::CodeGenFileType filetype = llvm::CGFT_ObjectFile;
 
   if (target_machine->addPassesToEmitFile(pass, dest, nullptr, filetype)) {
-    errs() << "target_machine can't emit a file of this type";
+    llvm::errs() << "target_machine can't emit a file of this type";
     return 1;
   }
 
   pass.run(module);
   dest.flush();
 
-  outs() << "Wrote " << filename << "\n";
+  llvm::outs() << "Wrote " << filename << "\n";
 
   return 0;
 }
