@@ -12,7 +12,9 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
 
-void repl(Lexer &lexer, Parser &parser, CodegenContext &codegen_context) {
+void repl(CodegenContext &codegen_context) {
+  Lexer lexer;
+  Parser parser;
   fprintf(stderr, "> ");
   Atom symbol = lexer.read();
   while (symbol != Atom::eof) {
@@ -89,13 +91,11 @@ void repl(Lexer &lexer, Parser &parser, CodegenContext &codegen_context) {
 }
 
 int main() {
-  Lexer lexer;
-  Parser parser;
   CodegenContext codegen_context("kaleidoscope");
+
+  repl(codegen_context);
+
   llvm::Module &module = codegen_context.module();
-
-  repl(lexer, parser, codegen_context);
-
   module.print(llvm::errs(), nullptr);
 
   // Initialize the target registry etc.
