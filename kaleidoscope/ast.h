@@ -1,17 +1,18 @@
 #pragma once
-#include "llvm_connector.h"
 #include "llvm/IR/Value.h"
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
+class CodegenContext;
+
 llvm::Value *LogErrorV(const char *str);
 
 class Expr {
 public:
   virtual ~Expr();
-  virtual llvm::Value *codegen(LLVMConnector &llvms) const = 0;
+  virtual llvm::Value *codegen(CodegenContext &codegen_ctx) const = 0;
 };
 
 using ExprPtr = std::unique_ptr<Expr>;
@@ -21,7 +22,7 @@ enum class Op { add, sub, mul, div, mod, lt, unknown };
 class Number : public Expr {
 public:
   Number(double value) : value_(value) {}
-  llvm::Value *codegen(LLVMConnector &llvms) const final;
+  llvm::Value *codegen(CodegenContext &codegen_ctx) const final;
 
 private:
   double value_;
@@ -30,7 +31,7 @@ private:
 class Variable : public Expr {
 public:
   Variable(const std::string &name) : name_(name) {}
-  llvm::Value *codegen(LLVMConnector &llvms) const final;
+  llvm::Value *codegen(CodegenContext &codegen_ctx) const final;
 
 private:
   std::string name_;
@@ -41,7 +42,7 @@ public:
   using Assignment = std::pair<std::string, ExprPtr>;
   VarIn(std::vector<Assignment> assignments, ExprPtr body)
       : assignments_(std::move(assignments)), body_(std::move(body)) {}
-  llvm::Value *codegen(LLVMConnector &llvms) const final;
+  llvm::Value *codegen(CodegenContext &codegen_ctx) const final;
 
 private:
   std::vector<Assignment> assignments_;
@@ -53,7 +54,7 @@ public:
   BinaryOp(Op op, ExprPtr lhs, ExprPtr rhs)
       : op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)) {}
 
-  llvm::Value *codegen(LLVMConnector &llvms) const final;
+  llvm::Value *codegen(CodegenContext &codegen_ctx) const final;
 
 private:
   Op op_;
@@ -80,7 +81,7 @@ public:
   Prototype(const std::string &name, Args args)
       : name_(name), args_(std::move(args)) {}
 
-  llvm::Function *codegen(LLVMConnector &llvms) const;
+  llvm::Function *codegen(CodegenContext &codegen_ctx) const;
 
   const std::string &name() { return name_; };
 
@@ -94,7 +95,7 @@ public:
   Definition(PrototypePtr prototype, ExprPtr body)
       : prototype_(std::move(prototype)), body_(std::move(body)) {}
 
-  llvm::Function *codegen(LLVMConnector &llvms) const;
+  llvm::Function *codegen(CodegenContext &codegen_ctx) const;
 
 private:
   PrototypePtr prototype_;
@@ -105,7 +106,7 @@ class Call : public Expr {
 public:
   Call(const std::string &name, ArgExprs args)
       : name_(name), args_(std::move(args)) {}
-  llvm::Value *codegen(LLVMConnector &llvms) const final;
+  llvm::Value *codegen(CodegenContext &codegen_ctx) const final;
 
 private:
   std::string name_;
@@ -119,7 +120,7 @@ public:
       : condition_(std::move(condition)), then_(std::move(then)),
         otherwise_(std::move(otherwise)) {}
 
-  llvm::Value *codegen(LLVMConnector &llvms) const final;
+  llvm::Value *codegen(CodegenContext &codegen_ctx) const final;
 
 private:
   ExprPtr condition_;
@@ -133,7 +134,7 @@ public:
       : var_(std::move(var)), start_(std::move(start)), end_(std::move(end)),
         step_(std::move(step)), body_(std::move(body)) {}
 
-  llvm::Value *codegen(LLVMConnector &llvms) const final;
+  llvm::Value *codegen(CodegenContext &codegen_ctx) const final;
 
 private:
   std::string var_;

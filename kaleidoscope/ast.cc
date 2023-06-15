@@ -1,4 +1,5 @@
 #include "ast.h"
+#include "codegen_context.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Module.h"
@@ -24,27 +25,27 @@ llvm::Value *LogErrorV(const char *str) {
 
 Expr::~Expr() {}
 
-Value *Number::codegen(LLVMConnector &llvms) const {
-  return ConstantFP::get(llvms.context(), APFloat(value_));
+Value *Number::codegen(CodegenContext &codegen_context) const {
+  return ConstantFP::get(codegen_context.context(), APFloat(value_));
 }
 
-Value *Variable::codegen(LLVMConnector &llvms) const {
+Value *Variable::codegen(CodegenContext &codegen_context) const {
   // Look this variable up in the function.
-  AllocaInst *alloca_inst = llvms.lookup(name_);
+  AllocaInst *alloca_inst = codegen_context.lookup(name_);
   if (!alloca_inst)
     LogErrorV("Unknown variable name");
 
   // Load the value
-  auto &builder = llvms.builder();
+  auto &builder = codegen_context.builder();
   return builder.CreateLoad(alloca_inst->getAllocatedType(), alloca_inst,
                             name_.c_str());
 }
 
-Value *VarIn::codegen(LLVMConnector &llvms) const {
+Value *VarIn::codegen(CodegenContext &codegen_context) const {
   // Look this variable up in the function.
   std::vector<AllocaInst *> old_bindings;
 
-  auto &builder = llvms.builder();
+  auto &builder = codegen_context.builder();
 
   Function *fn = builder.GetInsertBlock()->getParent();
 
@@ -55,41 +56,41 @@ Value *VarIn::codegen(LLVMConnector &llvms) const {
 
     Value *init_value;
     if (init) {
-      init_value = init->codegen(llvms);
+      init_value = init->codegen(codegen_context);
       if (!init_value) {
         return nullptr;
       }
     } else {
-      init_value = ConstantFP::get(llvms.context(), APFloat(0.0));
+      init_value = ConstantFP::get(codegen_context.context(), APFloat(0.0));
     }
 
-    AllocaInst *alloca = llvms.create_entry_block_alloca(fn, name);
+    AllocaInst *alloca = codegen_context.create_entry_block_alloca(fn, name);
     builder.CreateStore(init_value, alloca);
 
-    old_bindings.push_back(llvms.lookup(name));
-    llvms.set(name, alloca);
+    old_bindings.push_back(codegen_context.lookup(name));
+    codegen_context.set(name, alloca);
   }
 
-  Value *body_value = body_->codegen(llvms);
+  Value *body_value = body_->codegen(codegen_context);
   if (!body_value) {
     return nullptr;
   }
 
   for (size_t i = 0; i < assignments_.size(); i++) {
     const std::string &name = assignments_[i].first;
-    llvms.set(name, old_bindings[i]);
+    codegen_context.set(name, old_bindings[i]);
   }
 
   return body_value;
 }
 
-Value *BinaryOp::codegen(LLVMConnector &llvms) const {
-  Value *lhs = lhs_->codegen(llvms);
-  Value *rhs = rhs_->codegen(llvms);
+Value *BinaryOp::codegen(CodegenContext &codegen_context) const {
+  Value *lhs = lhs_->codegen(codegen_context);
+  Value *rhs = rhs_->codegen(codegen_context);
   if (!lhs || !rhs)
     return nullptr;
 
-  llvm::IRBuilder<> &builder = llvms.builder();
+  llvm::IRBuilder<> &builder = codegen_context.builder();
   switch (op_) {
   case Op::add:
     return builder.CreateFAdd(lhs, rhs, "addtmp");
@@ -112,8 +113,8 @@ Value *BinaryOp::codegen(LLVMConnector &llvms) const {
     // we used the sitofp instruction, the Kaleidoscope ‘<’ operator would
     // return 0.0 and -1.0, depending on the input value.
 
-    return builder.CreateUIToFP(lhs, Type::getDoubleTy(llvms.context()),
-                                "booltmp");
+    return builder.CreateUIToFP(
+        lhs, Type::getDoubleTy(codegen_context.context()), "booltmp");
   default:
     return LogErrorV("invalid binary operator");
   }
@@ -121,9 +122,9 @@ Value *BinaryOp::codegen(LLVMConnector &llvms) const {
 
 namespace function {
 
-Value *Call::codegen(LLVMConnector &llvms) const {
+Value *Call::codegen(CodegenContext &codegen_context) const {
   // Look up the name in the global module table.
-  Function *fn = llvms.module().getFunction(name_);
+  Function *fn = codegen_context.module().getFunction(name_);
   if (!fn)
     return LogErrorV("Unknown function referenced");
 
@@ -133,22 +134,23 @@ Value *Call::codegen(LLVMConnector &llvms) const {
 
   std::vector<Value *> arg_values;
   for (unsigned i = 0, e = args_.size(); i != e; ++i) {
-    arg_values.push_back(args_[i]->codegen(llvms));
+    arg_values.push_back(args_[i]->codegen(codegen_context));
     if (!arg_values.back())
       return nullptr;
   }
 
-  return llvms.builder().CreateCall(fn, arg_values, "calltmp");
+  return codegen_context.builder().CreateCall(fn, arg_values, "calltmp");
 }
 
-Function *Prototype::codegen(LLVMConnector &llvms) const {
+Function *Prototype::codegen(CodegenContext &codegen_context) const {
   // Make the function type:  double(double,double) etc.
-  std::vector<Type *> Doubles(args_.size(), Type::getDoubleTy(llvms.context()));
+  std::vector<Type *> Doubles(args_.size(),
+                              Type::getDoubleTy(codegen_context.context()));
   FunctionType *function_type = FunctionType::get(
-      Type::getDoubleTy(llvms.context()), Doubles, /*vararg=*/false);
+      Type::getDoubleTy(codegen_context.context()), Doubles, /*vararg=*/false);
 
   Function *fn = Function::Create(function_type, Function::ExternalLinkage,
-                                  name_, llvms.module());
+                                  name_, codegen_context.module());
 
   // Set names for all arguments.
   unsigned idx = 0;
@@ -159,12 +161,12 @@ Function *Prototype::codegen(LLVMConnector &llvms) const {
   return fn;
 }
 
-Function *Definition::codegen(LLVMConnector &llvms) const {
+Function *Definition::codegen(CodegenContext &codegen_context) const {
   // First, check for an existing function from a previous 'extern' declaration.
-  Function *fn = llvms.module().getFunction(prototype_->name());
+  Function *fn = codegen_context.module().getFunction(prototype_->name());
 
   if (!fn)
-    fn = prototype_->codegen(llvms);
+    fn = prototype_->codegen(codegen_context);
 
   if (!fn)
     return nullptr;
@@ -173,23 +175,24 @@ Function *Definition::codegen(LLVMConnector &llvms) const {
     return (Function *)LogErrorV("Function cannot be redefined.");
 
   // Create a new basic block to start insertion into.
-  BasicBlock *basic_block = BasicBlock::Create(llvms.context(), "entry", fn);
+  BasicBlock *basic_block =
+      BasicBlock::Create(codegen_context.context(), "entry", fn);
 
-  auto &builder = llvms.builder();
+  auto &builder = codegen_context.builder();
   builder.SetInsertPoint(basic_block);
 
   // Record the function arguments in the NamedValues map.
-  llvms.clear();
+  codegen_context.clear();
   for (auto &arg : fn->args()) {
     llvm::StringRef nameRef = arg.getName();
     std::string name(nameRef.data(), nameRef.size());
 
-    AllocaInst *alloca = llvms.create_entry_block_alloca(fn, name);
+    AllocaInst *alloca = codegen_context.create_entry_block_alloca(fn, name);
     builder.CreateStore(&arg, alloca);
-    llvms.set(name, alloca);
+    codegen_context.set(name, alloca);
   }
 
-  if (Value *RetVal = body_->codegen(llvms)) {
+  if (Value *RetVal = body_->codegen(codegen_context)) {
     // Finish off the function.
     builder.CreateRet(RetVal);
 
@@ -208,14 +211,14 @@ Function *Definition::codegen(LLVMConnector &llvms) const {
 
 } // namespace function
 
-Value *IfThenElse::codegen(LLVMConnector &llvms) const {
-  Value *condition_value = condition_->codegen(llvms);
+Value *IfThenElse::codegen(CodegenContext &codegen_context) const {
+  Value *condition_value = condition_->codegen(codegen_context);
   if (!condition_value) {
     return nullptr;
   }
 
-  auto &builder = llvms.builder();
-  auto &context = llvms.context();
+  auto &builder = codegen_context.builder();
+  auto &context = codegen_context.context();
 
   condition_value = builder.CreateFCmpONE(
       condition_value, ConstantFP::get(context, APFloat(0.0)), "ifcond");
@@ -226,11 +229,12 @@ Value *IfThenElse::codegen(LLVMConnector &llvms) const {
   BasicBlock *otherwise_block = BasicBlock::Create(context, "else");
   BasicBlock *merge_block = BasicBlock::Create(context, "ifcont");
 
-  llvms.builder().CreateCondBr(condition_value, then_block, otherwise_block);
+  codegen_context.builder().CreateCondBr(condition_value, then_block,
+                                         otherwise_block);
 
   // Emit otherwise value.
-  llvms.builder().SetInsertPoint(then_block);
-  Value *then_value = then_->codegen(llvms);
+  codegen_context.builder().SetInsertPoint(then_block);
+  Value *then_value = then_->codegen(codegen_context);
 
   if (!then_value) {
     return nullptr;
@@ -243,7 +247,7 @@ Value *IfThenElse::codegen(LLVMConnector &llvms) const {
   fn->getBasicBlockList().push_back(otherwise_block);
   builder.SetInsertPoint(otherwise_block);
 
-  Value *otherwise_value = otherwise_->codegen(llvms);
+  Value *otherwise_value = otherwise_->codegen(codegen_context);
   if (!otherwise_value) {
     return nullptr;
   }
@@ -262,18 +266,18 @@ Value *IfThenElse::codegen(LLVMConnector &llvms) const {
   return phi_node;
 }
 
-llvm::Value *For::codegen(LLVMConnector &llvms) const {
-  auto &builder = llvms.builder();
+llvm::Value *For::codegen(CodegenContext &codegen_context) const {
+  auto &builder = codegen_context.builder();
   Function *fn = builder.GetInsertBlock()->getParent();
 
   // Emit the start code first, without 'variable' in scope.
-  AllocaInst *alloca = llvms.create_entry_block_alloca(fn, var_);
+  AllocaInst *alloca = codegen_context.create_entry_block_alloca(fn, var_);
 
-  Value *start_value = start_->codegen(llvms);
+  Value *start_value = start_->codegen(codegen_context);
   if (!start_value)
     return nullptr;
 
-  auto &context = llvms.context();
+  auto &context = codegen_context.context();
 
   // Make the new basic block for the loop header, inserting after current
   // block.
@@ -295,19 +299,19 @@ llvm::Value *For::codegen(LLVMConnector &llvms) const {
 
   // Within the loop, the variable is defined equal to the PHI node.  If it
   // shadows an existing variable, we have to restore it, so save it now.
-  AllocaInst *old_value = llvms.lookup(var_);
-  llvms.set(var_, alloca);
+  AllocaInst *old_value = codegen_context.lookup(var_);
+  codegen_context.set(var_, alloca);
 
   // Emit the body of the loop.  This, like any other expr, can change the
   // current BB.  Note that we ignore the value computed by the body, but don't
   // allow an error.
-  if (!body_->codegen(llvms))
+  if (!body_->codegen(codegen_context))
     return nullptr;
 
   // Emit the step value.
   Value *step_value = nullptr;
   if (step_) {
-    step_value = step_->codegen(llvms);
+    step_value = step_->codegen(codegen_context);
     if (!step_value)
       return nullptr;
   } else {
@@ -322,7 +326,7 @@ llvm::Value *For::codegen(LLVMConnector &llvms) const {
   builder.CreateStore(next_var, alloca);
 
   // Compute the end condition.
-  Value *end_condition = end_->codegen(llvms);
+  Value *end_condition = end_->codegen(codegen_context);
   if (!end_condition)
     return nullptr;
 
@@ -345,9 +349,9 @@ llvm::Value *For::codegen(LLVMConnector &llvms) const {
 
   // Restore the unshadowed variable.
   if (old_value) {
-    llvms.set(var_, old_value);
+    codegen_context.set(var_, old_value);
   } else {
-    llvms.erase(var_);
+    codegen_context.erase(var_);
   }
 
   // for expr always returns 0.0.

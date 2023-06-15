@@ -1,5 +1,5 @@
+#include "kaleidoscope/codegen_context.h"
 #include "kaleidoscope/lexer.h"
-#include "kaleidoscope/llvm_connector.h"
 #include "kaleidoscope/parser.h"
 #include <cstdio>
 
@@ -12,7 +12,7 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
 
-void repl(Lexer &lexer, Parser &parser, LLVMConnector &llvms) {
+void repl(Lexer &lexer, Parser &parser, CodegenContext &codegen_context) {
   fprintf(stderr, "> ");
   Atom symbol = lexer.read();
   while (symbol != Atom::eof) {
@@ -29,7 +29,7 @@ void repl(Lexer &lexer, Parser &parser, LLVMConnector &llvms) {
       DefinitionPtr def = parser.definition(lexer);
       if (def) {
         // fprintf(stderr, "Parsed def\n");
-        if (auto ir = def->codegen(llvms)) {
+        if (auto ir = def->codegen(codegen_context)) {
           ir->print(llvm::errs());
           fprintf(stderr, "\n");
         }
@@ -44,7 +44,7 @@ void repl(Lexer &lexer, Parser &parser, LLVMConnector &llvms) {
       PrototypePtr expr = parser.extern_(lexer);
       if (expr) {
         // fprintf(stderr, "Parsed extern\n");
-        if (auto ir = expr->codegen(llvms)) {
+        if (auto ir = expr->codegen(codegen_context)) {
           ir->print(llvm::errs());
           fprintf(stderr, "\n");
         }
@@ -70,7 +70,7 @@ void repl(Lexer &lexer, Parser &parser, LLVMConnector &llvms) {
       if (expr) {
         // fprintf(stderr, "Parsed top-level expression till %c\n",
         //         lexer.current());
-        if (auto ir = expr->codegen(llvms)) {
+        if (auto ir = expr->codegen(codegen_context)) {
           ir->print(llvm::errs());
           fprintf(stderr, "\n");
 
@@ -91,10 +91,10 @@ void repl(Lexer &lexer, Parser &parser, LLVMConnector &llvms) {
 int main() {
   Lexer lexer;
   Parser parser;
-  LLVMConnector llvms("kaleidoscope");
-  llvm::Module &module = llvms.module();
+  CodegenContext codegen_context("kaleidoscope");
+  llvm::Module &module = codegen_context.module();
 
-  repl(lexer, parser, llvms);
+  repl(lexer, parser, codegen_context);
 
   module.print(llvm::errs(), nullptr);
 
