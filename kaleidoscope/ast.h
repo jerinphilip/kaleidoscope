@@ -23,7 +23,7 @@ enum class Op { add, sub, mul, div, mod, lt, unknown };
 class Number : public Expr {
  public:
   Number(double value) : value_(value) {}
-  llvm::Value *codegen(CodegenContext &codegen_ctx) const final;
+  llvm::Value *codegen(CodegenContext &codegen_context) const final;
 
  private:
   double value_;
@@ -32,7 +32,7 @@ class Number : public Expr {
 class Variable : public Expr {
  public:
   Variable(const std::string &name) : name_(name) {}
-  llvm::Value *codegen(CodegenContext &codegen_ctx) const final;
+  llvm::Value *codegen(CodegenContext &codegen_context) const final;
 
  private:
   std::string name_;
@@ -43,7 +43,7 @@ class VarIn : public Expr {
   using Assignment = std::pair<std::string, ExprPtr>;
   VarIn(std::vector<Assignment> assignments, ExprPtr body)
       : assignments_(std::move(assignments)), body_(std::move(body)) {}
-  llvm::Value *codegen(CodegenContext &codegen_ctx) const final;
+  llvm::Value *codegen(CodegenContext &codegen_context) const final;
 
  private:
   std::vector<Assignment> assignments_;
@@ -55,7 +55,7 @@ class BinaryOp : public Expr {
   BinaryOp(Op op, ExprPtr lhs, ExprPtr rhs)
       : op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)) {}
 
-  llvm::Value *codegen(CodegenContext &codegen_ctx) const final;
+  llvm::Value *codegen(CodegenContext &codegen_context) const final;
 
  private:
   Op op_;
@@ -82,7 +82,7 @@ class Prototype {
   Prototype(const std::string &name, Args args)
       : name_(name), args_(std::move(args)) {}
 
-  llvm::Function *codegen(CodegenContext &codegen_ctx) const;
+  llvm::Function *codegen(CodegenContext &codegen_context) const;
 
   const std::string &name() { return name_; };
 
@@ -96,7 +96,7 @@ class Definition {
   Definition(PrototypePtr prototype, ExprPtr body)
       : prototype_(std::move(prototype)), body_(std::move(body)) {}
 
-  llvm::Function *codegen(CodegenContext &codegen_ctx) const;
+  llvm::Function *codegen(CodegenContext &codegen_context) const;
 
  private:
   PrototypePtr prototype_;
@@ -107,7 +107,7 @@ class Call : public Expr {
  public:
   Call(const std::string &name, ArgExprs args)
       : name_(name), args_(std::move(args)) {}
-  llvm::Value *codegen(CodegenContext &codegen_ctx) const final;
+  llvm::Value *codegen(CodegenContext &codegen_context) const final;
 
  private:
   std::string name_;
@@ -122,7 +122,7 @@ class IfThenElse : public Expr {
         then_(std::move(then)),
         otherwise_(std::move(otherwise)) {}
 
-  llvm::Value *codegen(CodegenContext &codegen_ctx) const final;
+  llvm::Value *codegen(CodegenContext &codegen_context) const final;
 
  private:
   ExprPtr condition_;
@@ -139,7 +139,7 @@ class For : public Expr {
         step_(std::move(step)),
         body_(std::move(body)) {}
 
-  llvm::Value *codegen(CodegenContext &codegen_ctx) const final;
+  llvm::Value *codegen(CodegenContext &codegen_context) const final;
 
  private:
   std::string var_;

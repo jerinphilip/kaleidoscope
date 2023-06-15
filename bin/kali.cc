@@ -31,7 +31,7 @@ void repl(CodegenContext &codegen_context) {
       DefinitionPtr def = parser.definition(lexer);
       if (def) {
         // fprintf(stderr, "Parsed def\n");
-        if (auto ir = def->codegen(codegen_context)) {
+        if (auto *ir = def->codegen(codegen_context)) {
           ir->print(llvm::errs());
           fprintf(stderr, "\n");
         }
@@ -46,7 +46,7 @@ void repl(CodegenContext &codegen_context) {
       PrototypePtr expr = parser.extern_(lexer);
       if (expr) {
         // fprintf(stderr, "Parsed extern\n");
-        if (auto ir = expr->codegen(codegen_context)) {
+        if (auto *ir = expr->codegen(codegen_context)) {
           ir->print(llvm::errs());
           fprintf(stderr, "\n");
         }
@@ -72,7 +72,7 @@ void repl(CodegenContext &codegen_context) {
       if (expr) {
         // fprintf(stderr, "Parsed top-level expression till %c\n",
         //         lexer.current());
-        if (auto ir = expr->codegen(codegen_context)) {
+        if (auto *ir = expr->codegen(codegen_context)) {
           ir->print(llvm::errs());
           fprintf(stderr, "\n");
 
@@ -108,19 +108,19 @@ int main() {
   std::string target_triple = llvm::sys::getDefaultTargetTriple();
   module.setTargetTriple(target_triple);
 
-  std::string Error;
-  auto target = llvm::TargetRegistry::lookupTarget(target_triple, Error);
+  std::string error;
+  const auto *target = llvm::TargetRegistry::lookupTarget(target_triple, error);
 
   // Print an error and exit if we couldn't find the requested target.
   // This generally occurs if we've forgotten to initialise the
   // TargetRegistry or we have a bogus target triple.
   if (!target) {
-    llvm::errs() << Error;
+    llvm::errs() << error;
     return 1;
   }
 
   std::string cpu = "generic";
-  std::string features = "";
+  std::string features;
 
   llvm::TargetOptions target_options;
   llvm::Optional<llvm::Reloc::Model> relocation_model;

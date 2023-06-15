@@ -10,7 +10,7 @@ int resolve_precedence(char op);
 class Parser {
  public:
   // numberExpr = number
-  ExprPtr number(Lexer &lexer);
+  static ExprPtr number(Lexer &lexer);
 
   // paranthesisExpr = '(' expression ')'
   ExprPtr paranthesis(Lexer &lexer);
@@ -35,7 +35,7 @@ class Parser {
   ExprPtr binOpRHS(Lexer &lexer, int expr_precedence, ExprPtr lhs);
 
   // prototype = id '(' id* ')'
-  PrototypePtr prototype(Lexer &lexer);
+  static PrototypePtr prototype(Lexer &lexer);
 
   /// definition = 'def' prototype expression
   DefinitionPtr definition(Lexer &lexer);

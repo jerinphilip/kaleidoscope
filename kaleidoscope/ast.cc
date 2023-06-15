@@ -24,7 +24,7 @@ llvm::Value *LogErrorV(const char *str) {
   return nullptr;
 }
 
-Expr::~Expr() {}
+Expr::~Expr() = default;
 
 Value *Number::codegen(CodegenContext &codegen_context) const {
   return ConstantFP::get(codegen_context.context(), APFloat(value_));
@@ -131,8 +131,8 @@ Value *Call::codegen(CodegenContext &codegen_context) const {
     return LogErrorV("Incorrect # arguments passed");
 
   std::vector<Value *> arg_values;
-  for (unsigned i = 0, e = args_.size(); i != e; ++i) {
-    arg_values.push_back(args_[i]->codegen(codegen_context));
+  for (const auto & arg : args_) {
+    arg_values.push_back(arg->codegen(codegen_context));
     if (!arg_values.back()) return nullptr;
   }
 
@@ -141,10 +141,10 @@ Value *Call::codegen(CodegenContext &codegen_context) const {
 
 Function *Prototype::codegen(CodegenContext &codegen_context) const {
   // Make the function type:  double(double,double) etc.
-  std::vector<Type *> Doubles(args_.size(),
+  std::vector<Type *> doubles(args_.size(),
                               Type::getDoubleTy(codegen_context.context()));
   FunctionType *function_type = FunctionType::get(
-      Type::getDoubleTy(codegen_context.context()), Doubles, /*vararg=*/false);
+      Type::getDoubleTy(codegen_context.context()), doubles, /*vararg=*/false);
 
   Function *fn = Function::Create(function_type, Function::ExternalLinkage,
                                   name_, codegen_context.module());
@@ -179,17 +179,17 @@ Function *Definition::codegen(CodegenContext &codegen_context) const {
   // Record the function arguments in the NamedValues map.
   codegen_context.clear();
   for (auto &arg : fn->args()) {
-    llvm::StringRef nameRef = arg.getName();
-    std::string name(nameRef.data(), nameRef.size());
+    llvm::StringRef name_ref = arg.getName();
+    std::string name(name_ref.data(), name_ref.size());
 
     AllocaInst *alloca = codegen_context.create_entry_block_alloca(fn, name);
     builder.CreateStore(&arg, alloca);
     codegen_context.set(name, alloca);
   }
 
-  if (Value *RetVal = body_->codegen(codegen_context)) {
+  if (Value *ret_val = body_->codegen(codegen_context)) {
     // Finish off the function.
-    builder.CreateRet(RetVal);
+    builder.CreateRet(ret_val);
 
     // This function does a variety of consistency checks on the generated code,
     // to determine if our compiler is doing everything right. Using this is

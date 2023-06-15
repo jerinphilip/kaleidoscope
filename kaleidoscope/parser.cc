@@ -16,7 +16,7 @@ std::unique_ptr<function::Prototype> LogErrorP(const char *message) {
 
 // numberExpr = number
 ExprPtr Parser::number(Lexer &lexer) {
-  double value = strtod(lexer.atom().c_str(), 0);
+  double value = strtod(lexer.atom().c_str(), nullptr);
   auto result = std::make_unique<Number>(value);
   lexer.read();
   return result;
@@ -70,9 +70,8 @@ ExprPtr Parser::identifier(Lexer &lexer) {
 
       if (lexer.current() != ',') {
         return LogError("Expected ')' or ',' in argument list");
-      } else {
-        lexer.read();  // Consume ','
-      }
+      }         lexer.read();  // Consume ','
+     
       // fprintf(stderr, "FnArg: %s", lexer.atom().c_str());
     }
   }
@@ -128,9 +127,9 @@ int resolve_precedence(char op) {
 
 ExprPtr Parser::binOpRHS(Lexer &lexer, int expr_precedence, ExprPtr lhs) {
   while (true) {
-    char binOp = lexer.current();
+    char bin_op = lexer.current();
     // fprintf(stderr, "binOp: %c\n", binOp);
-    int precedence = resolve_precedence(binOp);
+    int precedence = resolve_precedence(bin_op);
     // fprintf(stderr, "binOp-prec: %d, expr-prec: %d\n", precedence,
     //         expr_precedence);
     if (precedence < expr_precedence) {
@@ -149,8 +148,8 @@ ExprPtr Parser::binOpRHS(Lexer &lexer, int expr_precedence, ExprPtr lhs) {
     }
 
     // Do we have a binOp behind the rhs?
-    char nextBinOp = lexer.current();
-    int next_precedence = resolve_precedence(nextBinOp);
+    char next_bin_op = lexer.current();
+    int next_precedence = resolve_precedence(next_bin_op);
     // fprintf(stderr, "nextBinOp: %c\n", nextBinOp);
     // fprintf(stderr, "binOp-prec: %d, nextBinOp-prec: %d\n", precedence,
     //         next_precedence);
@@ -161,7 +160,7 @@ ExprPtr Parser::binOpRHS(Lexer &lexer, int expr_precedence, ExprPtr lhs) {
       if (rhs == nullptr) return nullptr;
     }
 
-    lhs = std::make_unique<BinaryOp>(op_from_keyword(binOp), std::move(lhs),
+    lhs = std::make_unique<BinaryOp>(op_from_keyword(bin_op), std::move(lhs),
                                      std::move(rhs));
   }
 }
@@ -206,9 +205,8 @@ PrototypePtr Parser::prototype(Lexer &lexer) {
 
   if (lexer.current() != ')') {
     return LogErrorP("Expected ')' in prototype");
-  } else {
-    lexer.read();  // Consume ')'
-  }
+  }     lexer.read();  // Consume ')'
+ 
 
   return std::make_unique<function::Prototype>(identifier, std::move(args));
 }
@@ -357,7 +355,7 @@ ExprPtr Parser::var(Lexer &lexer) {
       }
     }
 
-    assignments.push_back(std::make_pair(identifier, std::move(init)));
+    assignments.emplace_back(identifier, std::move(init));
 
     // Do we have more comma separated variables?
     // If not, break.
