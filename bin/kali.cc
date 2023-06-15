@@ -91,10 +91,11 @@ int main() {
   Lexer lexer;
   Parser parser;
   LLVMConnector llvms("kaleidoscope");
+  auto &module = llvms.module();
 
   fprintf(stderr, "> ");
   main_loop(lexer, parser, llvms);
-  llvms.module().print(llvm::errs(), nullptr);
+  module.print(llvm::errs(), nullptr);
 
   // Initialize the target registry etc.
   using namespace llvm;
@@ -105,7 +106,7 @@ int main() {
   InitializeAllAsmPrinters();
 
   auto target_triple = sys::getDefaultTargetTriple();
-  llvms.module().setTargetTriple(target_triple);
+  module.setTargetTriple(target_triple);
 
   std::string Error;
   auto target = TargetRegistry::lookupTarget(target_triple, Error);
@@ -126,7 +127,7 @@ int main() {
   auto target_machine = target->createTargetMachine(
       target_triple, cpu, features, target_options, relocation_model);
 
-  llvms.module().setDataLayout(target_machine->createDataLayout());
+  module.setDataLayout(target_machine->createDataLayout());
 
   auto filename = "output.o";
   std::error_code error_code;
@@ -145,7 +146,7 @@ int main() {
     return 1;
   }
 
-  pass.run(llvms.module());
+  pass.run(module);
   dest.flush();
 
   outs() << "Wrote " << filename << "\n";
