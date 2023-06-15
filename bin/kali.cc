@@ -1,8 +1,8 @@
+#include <cstdio>
+
 #include "kaleidoscope/codegen_context.h"
 #include "kaleidoscope/lexer.h"
 #include "kaleidoscope/parser.h"
-#include <cstdio>
-
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/FileSystem.h"
@@ -17,72 +17,71 @@ void repl(CodegenContext &codegen_context) {
   Parser parser;
   fprintf(stderr, "> ");
   Atom symbol = lexer.read();
-  while (symbol != Atom::eof) {
-
+  while (symbol != Atom::kEof) {
     switch (symbol) {
-    case Atom::eof: {
-      fprintf(stderr, "Parsed EOF\n");
-      return;
-    } break;
+      case Atom::kEof: {
+        fprintf(stderr, "Parsed EOF\n");
+        return;
+      } break;
 
-    case Atom::keyword_def: {
-      // Handle definition
-      // fprintf(stderr, "Attempting to parse def ....\n");
-      DefinitionPtr def = parser.definition(lexer);
-      if (def) {
-        // fprintf(stderr, "Parsed def\n");
-        if (auto *ir = def->codegen(codegen_context)) {
-          ir->print(llvm::errs());
-          fprintf(stderr, "\n");
+      case Atom::kKeywordDef: {
+        // Handle definition
+        // fprintf(stderr, "Attempting to parse def ....\n");
+        DefinitionPtr def = parser.definition(lexer);
+        if (def) {
+          // fprintf(stderr, "Parsed def\n");
+          if (auto *ir = def->codegen(codegen_context)) {
+            ir->print(llvm::errs());
+            fprintf(stderr, "\n");
+          }
+        } else {
+          // fprintf(stderr, "Failed to parse...\n");
+          lexer.read();
         }
-      } else {
-        // fprintf(stderr, "Failed to parse...\n");
-        lexer.read();
-      }
-    } break;
+      } break;
 
-    case Atom::keyword_extern: {
-      // Handle extern
-      PrototypePtr expr = parser.extern_(lexer);
-      if (expr) {
-        // fprintf(stderr, "Parsed extern\n");
-        if (auto *ir = expr->codegen(codegen_context)) {
-          ir->print(llvm::errs());
-          fprintf(stderr, "\n");
+      case Atom::kKeywordExtern: {
+        // Handle extern
+        PrototypePtr expr = Parser::extern_(lexer);
+        if (expr) {
+          // fprintf(stderr, "Parsed extern\n");
+          if (auto *ir = expr->codegen(codegen_context)) {
+            ir->print(llvm::errs());
+            fprintf(stderr, "\n");
+          }
+        } else {
+          lexer.read();
         }
-      } else {
+      } break;
+
+      case Atom::kComment: {
+        // fprintf(stderr, "Parsed comment\n");
+      } break;
+
+      case Atom::kUnknown: {
+        // fprintf(stderr, "Parsed unknown\n");
+      } break;
+
+      case Atom::kSemicolon: {
         lexer.read();
-      }
-    } break;
+      } break;
 
-    case Atom::comment: {
-      // fprintf(stderr, "Parsed comment\n");
-    } break;
+      default: {
+        DefinitionPtr expr = parser.top(lexer);
+        if (expr) {
+          // fprintf(stderr, "Parsed top-level expression till %c\n",
+          //         lexer.current());
+          if (auto *ir = expr->codegen(codegen_context)) {
+            ir->print(llvm::errs());
+            fprintf(stderr, "\n");
 
-    case Atom::unknown: {
-      // fprintf(stderr, "Parsed unknown\n");
-    } break;
-
-    case Atom::semicolon: {
-      lexer.read();
-    } break;
-
-    default: {
-      DefinitionPtr expr = parser.top(lexer);
-      if (expr) {
-        // fprintf(stderr, "Parsed top-level expression till %c\n",
-        //         lexer.current());
-        if (auto *ir = expr->codegen(codegen_context)) {
-          ir->print(llvm::errs());
-          fprintf(stderr, "\n");
-
-          // Remove anonymous expression
-          ir->eraseFromParent();
+            // Remove anonymous expression
+            ir->eraseFromParent();
+          }
+        } else {
+          lexer.read();
         }
-      } else {
-        lexer.read();
-      }
-    } break;
+      } break;
     }
 
     fprintf(stderr, "> ");

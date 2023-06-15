@@ -25,38 +25,38 @@ Atom Lexer::read() {
     }
 
     if (atom_ == "def") {
-      return produce(Atom::keyword_def);
+      return produce(Atom::kKeywordDef);
     }
 
     if (atom_ == "extern") {
-      return produce(Atom::keyword_extern);
+      return produce(Atom::kKeywordExtern);
     }
 
     if (atom_ == "if") {
-      return produce(Atom::keyword_if);
+      return produce(Atom::kKeywordIf);
     }
 
     if (atom_ == "then") {
-      return produce(Atom::keyword_then);
+      return produce(Atom::kKeywordThen);
     }
 
     if (atom_ == "else") {
-      return produce(Atom::keyword_else);
+      return produce(Atom::kKeywordElse);
     }
 
     if (atom_ == "for") {
-      return produce(Atom::keyword_for);
+      return produce(Atom::kKeywordFor);
     }
 
     if (atom_ == "in") {
-      return produce(Atom::keyword_in);
+      return produce(Atom::kKeywordIn);
     }
 
     if (atom_ == "var") {
-      return produce(Atom::keyword_var);
+      return produce(Atom::kKeywordVar);
     }
 
-    return produce(Atom::identifier);
+    return produce(Atom::kIdentifier);
   }
 
   // Number parsing logic.
@@ -67,7 +67,7 @@ Atom Lexer::read() {
       next_ = advance();
     }
 
-    return produce(Atom::number);
+    return produce(Atom::kNumber);
   }
 
   // Comments
@@ -78,45 +78,45 @@ Atom Lexer::read() {
       next_ = advance();
     }
 
-    return produce(Atom::comment);
+    return produce(Atom::kComment);
   }
 
   if (next_ == '(') {
     atom_ = "(";
     next_ = advance();
-    return produce(Atom::open);
+    return produce(Atom::kOpen);
   }
 
   if (next_ == ')') {
     atom_ = ")";
     next_ = advance();
-    return produce(Atom::close);
+    return produce(Atom::kClose);
   }
 
   if (next_ == EOF) {
     atom_ = std::string(1, EOF);
-    return produce(Atom::eof);
+    return produce(Atom::kEof);
   }
 
   if (next_ == ';') {
     atom_ = std::string(1, next_);
     next_ = advance();
-    return produce(Atom::semicolon);
+    return produce(Atom::kSemicolon);
   }
 
   if (detail::isOp(next_)) {
     atom_ = std::string(1, next_);
     next_ = advance();
-    return produce(Atom::op);
+    return produce(Atom::kOp);
   }
 
   if (next_ == ',') {
     atom_ = std::string(1, next_);
     next_ = advance();
-    return produce(Atom::comma);
+    return produce(Atom::kComma);
   }
 
   atom_ = std::string(1, next_);
   next_ = advance();
-  return produce(Atom::unknown);
+  return produce(Atom::kUnknown);
 }

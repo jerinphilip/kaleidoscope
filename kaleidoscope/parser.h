@@ -41,7 +41,7 @@ class Parser {
   DefinitionPtr definition(Lexer &lexer);
 
   /// external = 'extern' prototype
-  PrototypePtr extern_(Lexer &lexer);
+  static PrototypePtr extern_(Lexer &lexer);
 
   /// top = expression
   DefinitionPtr top(Lexer &lexer);

@@ -7,29 +7,29 @@
 #include "ast.h"
 
 enum class Atom {
-  eof,
-  identifier,
-  keyword_def,
-  keyword_extern,
-  keyword_if,
-  keyword_then,
-  keyword_else,
-  keyword_for,
-  keyword_in,
-  keyword_var,
-  number,
-  semicolon,
-  comment,
-  open,
-  close,
-  op,
-  unknown,
-  comma
+  kEof,
+  kIdentifier,
+  kKeywordDef,
+  kKeywordExtern,
+  kKeywordIf,
+  kKeywordThen,
+  kKeywordElse,
+  kKeywordFor,
+  kKeywordIn,
+  kKeywordVar,
+  kNumber,
+  kSemicolon,
+  kComment,
+  kOpen,
+  kClose,
+  kOp,
+  kUnknown,
+  kComma
 };
 
 class Lexer {
  public:
-  Lexer() : next_(' '){};
+  Lexer() = default;
   Atom read();
   const std::string &atom() const { return atom_; }
   char next() const { return next_; }
@@ -55,7 +55,8 @@ class Lexer {
   }
 
   std::string atom_;
-  char current_, next_;
+  char current_;
+  char next_ = ' ';
   Atom type_;
 };
 
