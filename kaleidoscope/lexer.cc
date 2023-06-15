@@ -4,8 +4,8 @@
 
 namespace detail {
 bool isOp(char c) {
-  auto query = OP_PRECEDENCE.find(c);
-  return query != OP_PRECEDENCE.end();
+  auto query = op_precedence.find(c);
+  return query != op_precedence.end();
 }
 }  // namespace detail
 

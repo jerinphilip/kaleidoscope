@@ -123,8 +123,8 @@ ExprPtr Parser::expression(Lexer &lexer) {
 }
 
 int resolve_precedence(char op) {
-  auto query = OP_PRECEDENCE.find(op);
-  if (query != OP_PRECEDENCE.end()) {
+  auto query = op_precedence.find(op);
+  if (query != op_precedence.end()) {
     return query->second;
   }
   return -1;

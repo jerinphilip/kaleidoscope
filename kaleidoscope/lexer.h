@@ -60,5 +60,5 @@ class Lexer {
   Atom type_;
 };
 
-static std::map<char, int> OP_PRECEDENCE = {{'=', 2},  {'<', 10}, {'+', 20},
+static std::map<char, int> op_precedence = {{'=', 2},  {'<', 10}, {'+', 20},
                                             {'-', 20}, {'*', 40}, {'/', 40}};
