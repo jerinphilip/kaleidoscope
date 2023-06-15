@@ -1,4 +1,5 @@
 #include "lexer.h"
+
 #include <memory>
 
 namespace detail {
@@ -6,7 +7,7 @@ bool isOp(char c) {
   auto query = OP_PRECEDENCE.find(c);
   return query != OP_PRECEDENCE.end();
 }
-} // namespace detail
+}  // namespace detail
 
 Atom Lexer::read() {
   // fprintf(stderr, "[lexer] Moving past %s\n", atom().c_str());

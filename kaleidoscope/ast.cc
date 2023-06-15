@@ -1,4 +1,5 @@
 #include "ast.h"
+
 #include "codegen_context.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
@@ -32,8 +33,7 @@ Value *Number::codegen(CodegenContext &codegen_context) const {
 Value *Variable::codegen(CodegenContext &codegen_context) const {
   // Look this variable up in the function.
   AllocaInst *alloca_inst = codegen_context.lookup(name_);
-  if (!alloca_inst)
-    LogErrorV("Unknown variable name");
+  if (!alloca_inst) LogErrorV("Unknown variable name");
 
   // Load the value
   auto &builder = codegen_context.builder();
@@ -87,36 +87,35 @@ Value *VarIn::codegen(CodegenContext &codegen_context) const {
 Value *BinaryOp::codegen(CodegenContext &codegen_context) const {
   Value *lhs = lhs_->codegen(codegen_context);
   Value *rhs = rhs_->codegen(codegen_context);
-  if (!lhs || !rhs)
-    return nullptr;
+  if (!lhs || !rhs) return nullptr;
 
   llvm::IRBuilder<> &builder = codegen_context.builder();
   switch (op_) {
-  case Op::add:
-    return builder.CreateFAdd(lhs, rhs, "addtmp");
-  case Op::sub:
-    return builder.CreateFSub(lhs, rhs, "subtmp");
-  case Op::mul:
-    return builder.CreateFMul(lhs, rhs, "multmp");
-  case Op::div:
-    return builder.CreateFMul(lhs, rhs, "divtmp");
-  case Op::lt:
-    lhs = builder.CreateFCmpULT(lhs, rhs, "cmptmp");
-    // Convert bool 0/1 to double 0.0 or 1.0
-    //
-    // On the other hand, LLVM specifies that the fcmp instruction always
-    // returns an ‘i1’ value (a one bit integer). The problem with this is that
-    // Kaleidoscope wants the value to be a 0.0 or 1.0 value. In order to get
-    // these semantics, we combine the fcmp instruction with a uitofp
-    // instruction. This instruction converts its input integer into a floating
-    // point value by treating the input as an unsigned value. In contrast, if
-    // we used the sitofp instruction, the Kaleidoscope ‘<’ operator would
-    // return 0.0 and -1.0, depending on the input value.
+    case Op::add:
+      return builder.CreateFAdd(lhs, rhs, "addtmp");
+    case Op::sub:
+      return builder.CreateFSub(lhs, rhs, "subtmp");
+    case Op::mul:
+      return builder.CreateFMul(lhs, rhs, "multmp");
+    case Op::div:
+      return builder.CreateFMul(lhs, rhs, "divtmp");
+    case Op::lt:
+      lhs = builder.CreateFCmpULT(lhs, rhs, "cmptmp");
+      // Convert bool 0/1 to double 0.0 or 1.0
+      //
+      // On the other hand, LLVM specifies that the fcmp instruction always
+      // returns an ‘i1’ value (a one bit integer). The problem with this is
+      // that Kaleidoscope wants the value to be a 0.0 or 1.0 value. In order to
+      // get these semantics, we combine the fcmp instruction with a uitofp
+      // instruction. This instruction converts its input integer into a
+      // floating point value by treating the input as an unsigned value. In
+      // contrast, if we used the sitofp instruction, the Kaleidoscope ‘<’
+      // operator would return 0.0 and -1.0, depending on the input value.
 
-    return builder.CreateUIToFP(
-        lhs, Type::getDoubleTy(codegen_context.context()), "booltmp");
-  default:
-    return LogErrorV("invalid binary operator");
+      return builder.CreateUIToFP(
+          lhs, Type::getDoubleTy(codegen_context.context()), "booltmp");
+    default:
+      return LogErrorV("invalid binary operator");
   }
 }
 
@@ -125,8 +124,7 @@ namespace function {
 Value *Call::codegen(CodegenContext &codegen_context) const {
   // Look up the name in the global module table.
   Function *fn = codegen_context.module().getFunction(name_);
-  if (!fn)
-    return LogErrorV("Unknown function referenced");
+  if (!fn) return LogErrorV("Unknown function referenced");
 
   // If argument mismatch error.
   if (fn->arg_size() != args_.size())
@@ -135,8 +133,7 @@ Value *Call::codegen(CodegenContext &codegen_context) const {
   std::vector<Value *> arg_values;
   for (unsigned i = 0, e = args_.size(); i != e; ++i) {
     arg_values.push_back(args_[i]->codegen(codegen_context));
-    if (!arg_values.back())
-      return nullptr;
+    if (!arg_values.back()) return nullptr;
   }
 
   return codegen_context.builder().CreateCall(fn, arg_values, "calltmp");
@@ -165,11 +162,9 @@ Function *Definition::codegen(CodegenContext &codegen_context) const {
   // First, check for an existing function from a previous 'extern' declaration.
   Function *fn = codegen_context.module().getFunction(prototype_->name());
 
-  if (!fn)
-    fn = prototype_->codegen(codegen_context);
+  if (!fn) fn = prototype_->codegen(codegen_context);
 
-  if (!fn)
-    return nullptr;
+  if (!fn) return nullptr;
 
   if (!fn->empty())
     return (Function *)LogErrorV("Function cannot be redefined.");
@@ -209,7 +204,7 @@ Function *Definition::codegen(CodegenContext &codegen_context) const {
   return nullptr;
 }
 
-} // namespace function
+}  // namespace function
 
 Value *IfThenElse::codegen(CodegenContext &codegen_context) const {
   Value *condition_value = condition_->codegen(codegen_context);
@@ -274,8 +269,7 @@ llvm::Value *For::codegen(CodegenContext &codegen_context) const {
   AllocaInst *alloca = codegen_context.create_entry_block_alloca(fn, var_);
 
   Value *start_value = start_->codegen(codegen_context);
-  if (!start_value)
-    return nullptr;
+  if (!start_value) return nullptr;
 
   auto &context = codegen_context.context();
 
@@ -305,15 +299,13 @@ llvm::Value *For::codegen(CodegenContext &codegen_context) const {
   // Emit the body of the loop.  This, like any other expr, can change the
   // current BB.  Note that we ignore the value computed by the body, but don't
   // allow an error.
-  if (!body_->codegen(codegen_context))
-    return nullptr;
+  if (!body_->codegen(codegen_context)) return nullptr;
 
   // Emit the step value.
   Value *step_value = nullptr;
   if (step_) {
     step_value = step_->codegen(codegen_context);
-    if (!step_value)
-      return nullptr;
+    if (!step_value) return nullptr;
   } else {
     // If not specified, use 1.0.
     step_value = ConstantFP::get(context, APFloat(1.0));
@@ -327,8 +319,7 @@ llvm::Value *For::codegen(CodegenContext &codegen_context) const {
 
   // Compute the end condition.
   Value *end_condition = end_->codegen(codegen_context);
-  if (!end_condition)
-    return nullptr;
+  if (!end_condition) return nullptr;
 
   // Convert condition to a bool by comparing non-equal to 0.0.
   end_condition = builder.CreateFCmpONE(

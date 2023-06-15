@@ -1,6 +1,8 @@
 #include "parser.h"
-#include "ast.h"
+
 #include <memory>
+
+#include "ast.h"
 
 ExprPtr LogError(const char *message) {
   fprintf(stderr, "LogError: %s\n", message);
@@ -44,13 +46,13 @@ ExprPtr Parser::paranthesis(Lexer &lexer) {
 //        | identifierName '(' expression* ')'
 ExprPtr Parser::identifier(Lexer &lexer) {
   std::string identifier = lexer.atom();
-  lexer.read(); // Consume identifier
+  lexer.read();  // Consume identifier
 
   if (lexer.current() != '(') {
     return std::make_unique<Variable>(identifier);
   }
 
-  lexer.read(); // Consume '('
+  lexer.read();  // Consume '('
 
   function::ArgExprs args;
   if (lexer.current() != ')') {
@@ -62,14 +64,14 @@ ExprPtr Parser::identifier(Lexer &lexer) {
       }
 
       if (lexer.current() == ')') {
-        lexer.read(); // Consume ')'
+        lexer.read();  // Consume ')'
         break;
       }
 
       if (lexer.current() != ',') {
         return LogError("Expected ')' or ',' in argument list");
       } else {
-        lexer.read(); // Consume ','
+        lexer.read();  // Consume ','
       }
       // fprintf(stderr, "FnArg: %s", lexer.atom().c_str());
     }
@@ -87,23 +89,23 @@ ExprPtr Parser::identifier(Lexer &lexer) {
 //       | varExpr
 ExprPtr Parser::primary(Lexer &lexer) {
   switch (lexer.type()) {
-  default:
-    // fprintf(stderr, "Unknown token {%s}\n", lexer.atom().c_str());
-    char error_buffer[100];
-    snprintf(error_buffer, 100, "Unknown token {%s}", lexer.atom().c_str());
-    return LogError(error_buffer);
-  case Atom::identifier:
-    return identifier(lexer);
-  case Atom::number:
-    return number(lexer);
-  case Atom::open:
-    return paranthesis(lexer);
-  case Atom::keyword_if:
-    return if_then_else(lexer);
-  case Atom::keyword_for:
-    return for_in(lexer);
-  case Atom::keyword_var:
-    return var(lexer);
+    default:
+      // fprintf(stderr, "Unknown token {%s}\n", lexer.atom().c_str());
+      char error_buffer[100];
+      snprintf(error_buffer, 100, "Unknown token {%s}", lexer.atom().c_str());
+      return LogError(error_buffer);
+    case Atom::identifier:
+      return identifier(lexer);
+    case Atom::number:
+      return number(lexer);
+    case Atom::open:
+      return paranthesis(lexer);
+    case Atom::keyword_if:
+      return if_then_else(lexer);
+    case Atom::keyword_for:
+      return for_in(lexer);
+    case Atom::keyword_var:
+      return var(lexer);
   }
 }
 
@@ -156,8 +158,7 @@ ExprPtr Parser::binOpRHS(Lexer &lexer, int expr_precedence, ExprPtr lhs) {
     if (precedence < next_precedence) {
       // Recursive call, should take care of (op, operand)*
       rhs = binOpRHS(lexer, precedence + 1, std::move(rhs));
-      if (rhs == nullptr)
-        return nullptr;
+      if (rhs == nullptr) return nullptr;
     }
 
     lhs = std::make_unique<BinaryOp>(op_from_keyword(binOp), std::move(lhs),
@@ -166,16 +167,11 @@ ExprPtr Parser::binOpRHS(Lexer &lexer, int expr_precedence, ExprPtr lhs) {
 }
 
 Op op_from_keyword(char op) {
-  if (op == '+')
-    return Op::add;
-  if (op == '-')
-    return Op::sub;
-  if (op == '/')
-    return Op::div;
-  if (op == '*')
-    return Op::mul;
-  if (op == '<')
-    return Op::lt;
+  if (op == '+') return Op::add;
+  if (op == '-') return Op::sub;
+  if (op == '/') return Op::div;
+  if (op == '*') return Op::mul;
+  if (op == '<') return Op::lt;
 
   std::abort();
 
@@ -211,14 +207,14 @@ PrototypePtr Parser::prototype(Lexer &lexer) {
   if (lexer.current() != ')') {
     return LogErrorP("Expected ')' in prototype");
   } else {
-    lexer.read(); // Consume ')'
+    lexer.read();  // Consume ')'
   }
 
   return std::make_unique<function::Prototype>(identifier, std::move(args));
 }
 
 DefinitionPtr Parser::definition(Lexer &lexer) {
-  lexer.read(); // Consume `def`
+  lexer.read();  // Consume `def`
   std::unique_ptr<function::Prototype> prototype_expr = prototype(lexer);
   if (prototype_expr == nullptr) {
     return nullptr;
@@ -250,7 +246,7 @@ PrototypePtr Parser::extern_(Lexer &lexer) {
 }
 
 ExprPtr Parser::if_then_else(Lexer &lexer) {
-  lexer.read(); // Consume `if`.
+  lexer.read();  // Consume `if`.
   ExprPtr condition = expression(lexer);
 
   if (!condition) {
@@ -261,7 +257,7 @@ ExprPtr Parser::if_then_else(Lexer &lexer) {
     return LogError("Expected `then`");
   }
 
-  lexer.read(); // Consume `then`.
+  lexer.read();  // Consume `then`.
   ExprPtr then = expression(lexer);
   if (!then) {
     return nullptr;
@@ -271,7 +267,7 @@ ExprPtr Parser::if_then_else(Lexer &lexer) {
     return LogError("Expected `else`");
   }
 
-  lexer.read(); // Consume `else`.
+  lexer.read();  // Consume `else`.
 
   ExprPtr otherwise = expression(lexer);
 
@@ -284,18 +280,17 @@ ExprPtr Parser::if_then_else(Lexer &lexer) {
 }
 
 ExprPtr Parser::for_in(Lexer &lexer) {
-  lexer.read(); // consume `for`.
+  lexer.read();  // consume `for`.
 
   if (lexer.type() != Atom::identifier) {
     return LogError("expected identifier after `for`");
   }
 
   std::string identifier = lexer.atom();
-  lexer.read(); // consume identifier.
+  lexer.read();  // consume identifier.
 
-  if (lexer.current() != '=')
-    return LogError("expected '=' after for");
-  lexer.read(); // consume '='.
+  if (lexer.current() != '=') return LogError("expected '=' after for");
+  lexer.read();  // consume '='.
 
   auto start = expression(lexer);
   if (!start) {
@@ -326,7 +321,7 @@ ExprPtr Parser::for_in(Lexer &lexer) {
   if (lexer.type() != Atom::keyword_in) {
     return LogError("expected 'in' after for");
   }
-  lexer.read(); // consume 'in'.
+  lexer.read();  // consume 'in'.
 
   auto body = expression(lexer);
   if (!body) {
@@ -338,7 +333,7 @@ ExprPtr Parser::for_in(Lexer &lexer) {
 }
 
 ExprPtr Parser::var(Lexer &lexer) {
-  lexer.read(); // consume `var`.
+  lexer.read();  // consume `var`.
   std::vector<VarIn::Assignment> assignments;
 
   if (lexer.type() != Atom::identifier) {
@@ -348,7 +343,7 @@ ExprPtr Parser::var(Lexer &lexer) {
   // Read the variable name and assignment list.
   while (true) {
     std::string identifier = lexer.atom();
-    lexer.read(); // consume identifier.
+    lexer.read();  // consume identifier.
 
     // Optional initializer.
     ExprPtr init;
@@ -370,7 +365,7 @@ ExprPtr Parser::var(Lexer &lexer) {
       break;
     }
 
-    lexer.read(); // Consume the `,`
+    lexer.read();  // Consume the `,`
     if (lexer.type() != Atom::identifier) {
       return LogError("Expected identifier list after `var`.");
     }
@@ -381,7 +376,7 @@ ExprPtr Parser::var(Lexer &lexer) {
     return LogError("Expected `in` keyword after `var`");
   }
 
-  lexer.read(); // Consume `in`.
+  lexer.read();  // Consume `in`.
 
   ExprPtr body = expression(lexer);
   if (!body) {

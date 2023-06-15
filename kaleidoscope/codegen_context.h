@@ -1,4 +1,7 @@
 #pragma once
+#include <map>
+#include <memory>
+
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/BasicBlock.h"
@@ -7,12 +10,9 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
-#include <map>
-#include <memory>
 
 class CodegenContext {
-
-public:
+ public:
   CodegenContext(const std::string name)
       : context_(), module_(name, context_), builder_(context_) {}
 
@@ -50,7 +50,7 @@ public:
                                      variable.c_str());
   }
 
-private:
+ private:
   /// Global context for LLVM book-keeping.
   llvm::LLVMContext context_;
 

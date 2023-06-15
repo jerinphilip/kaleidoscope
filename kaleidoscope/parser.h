@@ -8,7 +8,7 @@ Op op_from_keyword(char op);
 int resolve_precedence(char op);
 
 class Parser {
-public:
+ public:
   // numberExpr = number
   ExprPtr number(Lexer &lexer);
 

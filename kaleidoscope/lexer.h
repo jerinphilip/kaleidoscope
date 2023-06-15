@@ -1,9 +1,10 @@
 #pragma once
-#include "ast.h"
 #include <cstdio>
 #include <map>
 #include <memory>
 #include <string>
+
+#include "ast.h"
 
 enum class Atom {
   eof,
@@ -27,7 +28,7 @@ enum class Atom {
 };
 
 class Lexer {
-public:
+ public:
   Lexer() : next_(' '){};
   Atom read();
   const std::string &atom() const { return atom_; }
@@ -35,7 +36,7 @@ public:
   char current() const { return current_; }
   Atom type() const { return type_; }
 
-private:
+ private:
   Atom produce(Atom token) {
     type_ = token;
     return token;
