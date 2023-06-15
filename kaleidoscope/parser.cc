@@ -23,6 +23,7 @@ ExprPtr Parser::number(Lexer &lexer) {
 }
 
 // paranthesisExpr = '(' expression ')'
+// NOLINTNEXTLINE(misc-no-recursion)
 ExprPtr Parser::paranthesis(Lexer &lexer) {
   // Consume the '('
   lexer.read();
@@ -44,6 +45,7 @@ ExprPtr Parser::paranthesis(Lexer &lexer) {
 // identifierExpr =
 //        | identifierName
 //        | identifierName '(' expression* ')'
+// NOLINTNEXTLINE(misc-no-recursion)
 ExprPtr Parser::identifier(Lexer &lexer) {
   std::string identifier = lexer.atom();
   lexer.read();  // Consume identifier
@@ -87,6 +89,7 @@ ExprPtr Parser::identifier(Lexer &lexer) {
 //       | ifExpr
 //       | forExpr
 //       | varExpr
+// NOLINTNEXTLINE(misc-no-recursion)
 ExprPtr Parser::primary(Lexer &lexer) {
   switch (lexer.type()) {
     default:
@@ -109,6 +112,7 @@ ExprPtr Parser::primary(Lexer &lexer) {
   }
 }
 
+// NOLINTNEXTLINE(misc-no-recursion)
 ExprPtr Parser::expression(Lexer &lexer) {
   auto lhs = primary(lexer);
   if (lhs == nullptr) {
@@ -126,6 +130,7 @@ int resolve_precedence(char op) {
   return -1;
 }
 
+// NOLINTNEXTLINE(misc-no-recursion)
 ExprPtr Parser::binOpRHS(Lexer &lexer, int expr_precedence, ExprPtr lhs) {
   while (true) {
     char bin_op = lexer.current();
@@ -244,6 +249,7 @@ PrototypePtr Parser::extern_(Lexer &lexer) {
   return prototype(lexer);
 }
 
+// NOLINTNEXTLINE(misc-no-recursion)
 ExprPtr Parser::if_then_else(Lexer &lexer) {
   lexer.read();  // Consume `if`.
   ExprPtr condition = expression(lexer);
@@ -278,6 +284,7 @@ ExprPtr Parser::if_then_else(Lexer &lexer) {
                                       std::move(otherwise));
 }
 
+// NOLINTNEXTLINE(misc-no-recursion)
 ExprPtr Parser::for_in(Lexer &lexer) {
   lexer.read();  // consume `for`.
 
@@ -331,6 +338,7 @@ ExprPtr Parser::for_in(Lexer &lexer) {
                                std::move(step), std::move(body));
 }
 
+// NOLINTNEXTLINE(misc-no-recursion)
 ExprPtr Parser::var(Lexer &lexer) {
   lexer.read();  // consume `var`.
   std::vector<VarIn::Assignment> assignments;
