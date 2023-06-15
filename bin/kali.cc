@@ -13,6 +13,7 @@
 #include "llvm/Target/TargetOptions.h"
 
 void main_loop(Lexer &lexer, Parser &parser, LLVMConnector &llvms) {
+  fprintf(stderr, "> ");
   Atom symbol = lexer.read();
   while (symbol != Atom::eof) {
 
@@ -93,7 +94,6 @@ int main() {
   LLVMConnector llvms("kaleidoscope");
   auto &module = llvms.module();
 
-  fprintf(stderr, "> ");
   main_loop(lexer, parser, llvms);
   module.print(llvm::errs(), nullptr);
 
@@ -127,7 +127,8 @@ int main() {
   auto target_machine = target->createTargetMachine(
       target_triple, cpu, features, target_options, relocation_model);
 
-  module.setDataLayout(target_machine->createDataLayout());
+  auto data_layout = target_machine->createDataLayout();
+  module.setDataLayout(data_layout);
 
   auto filename = "output.o";
   std::error_code error_code;
