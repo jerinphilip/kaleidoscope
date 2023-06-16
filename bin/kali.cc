@@ -88,7 +88,6 @@ int main(int argc, char **argv) {
   repl(source, codegen_context);
 
   llvm::Module &module = codegen_context.module();
-  module.print(llvm::errs(), nullptr);
 
   // Initialize the target registry etc.
   llvm::InitializeAllTargetInfos();
@@ -151,6 +150,7 @@ int main(int argc, char **argv) {
   }
 
   pass.run(module);
+  module.print(llvm::errs(), nullptr);
   dest.flush();
 
   return 0;
