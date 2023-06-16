@@ -131,7 +131,7 @@ Value *Call::codegen(CodegenContext &codegen_context) const {
     return LogErrorV("Incorrect # arguments passed");
 
   std::vector<Value *> arg_values;
-  for (const auto & arg : args_) {
+  for (const auto &arg : args_) {
     arg_values.push_back(arg->codegen(codegen_context));
     if (!arg_values.back()) return nullptr;
   }
@@ -167,7 +167,7 @@ Function *Definition::codegen(CodegenContext &codegen_context) const {
   if (!fn) return nullptr;
 
   if (!fn->empty())
-    return (Function *)LogErrorV("Function cannot be redefined.");
+    return static_cast<Function *>(LogErrorV("Function cannot be redefined."));
 
   // Create a new basic block to start insertion into.
   BasicBlock *basic_block =
