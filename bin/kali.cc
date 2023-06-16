@@ -11,6 +11,10 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
+#include "llvm/Transforms/InstCombine/InstCombine.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Scalar/GVN.h"
+#include "llvm/Transforms/Utils.h"
 
 void repl(const std::string &source, CodegenContext &codegen_context) {
   Lexer lexer(source);
@@ -129,6 +133,17 @@ int main(int argc, char **argv) {
 
   llvm::legacy::PassManager pass;
   llvm::CodeGenFileType filetype = llvm::CGFT_ObjectFile;
+
+  // Promote allocas to registers.
+  pass.add(llvm::createPromoteMemoryToRegisterPass());
+  // Do simple "peephole" optimizations and bit-twiddling optzns.
+  pass.add(llvm::createInstructionCombiningPass());
+  // Reassociate expressions.
+  pass.add(llvm::createReassociatePass());
+  // Eliminate Common SubExpressions.
+  pass.add(llvm::createGVNPass());
+  // Simplify the control flow graph (deleting unreachable blocks, etc).
+  pass.add(llvm::createCFGSimplificationPass());
 
   if (target_machine->addPassesToEmitFile(pass, dest, nullptr, filetype)) {
     llvm::errs() << "target_machine can't emit a file of this type";
