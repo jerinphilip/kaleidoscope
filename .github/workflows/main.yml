@@ -1,0 +1,39 @@
+name: "main"
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  clang-format:
+      name: "clang-format"
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v2
+          with:
+            submodules: recursive
+
+        - name: Install dependencies
+          run: |
+            sudo apt-get update
+            sudo apt-get install -y build-essential cmake
+            sudo apt-get install -y clang-format clang-tidy
+
+        - name: Run clang-format
+          run:
+              python3 run-clang-format.py --style file -r kaleidoscope app
+
+
+        - name: Prepare build, compilation database etc.
+          run: |
+              mkdir -p build
+              cd build
+              cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+        - name: Run clang-tidy
+          run: |
+              run-clang-tidy -p build "$PWD/kaleidoscope/.*"
+              run-clang-tidy -p build "$PWD/app/.*"
