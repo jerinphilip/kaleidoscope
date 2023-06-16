@@ -143,8 +143,9 @@ Function *Prototype::codegen(CodegenContext &codegen_context) const {
   // Make the function type:  double(double,double) etc.
   std::vector<Type *> doubles(args_.size(),
                               Type::getDoubleTy(codegen_context.context()));
-  FunctionType *function_type = FunctionType::get(
-      Type::getDoubleTy(codegen_context.context()), doubles, /*vararg=*/false);
+  FunctionType *function_type =
+      FunctionType::get(Type::getDoubleTy(codegen_context.context()), doubles,
+                        /*isVarArg=*/false);
 
   Function *fn = Function::Create(function_type, Function::ExternalLinkage,
                                   name_, codegen_context.module());
