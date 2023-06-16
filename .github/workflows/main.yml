@@ -24,7 +24,7 @@ jobs:
 
         - name: Run clang-format
           run:
-              python3 run-clang-format.py --style file -r kaleidoscope app
+              python3 scripts/run-clang-format.py --style file -r kaleidoscope app
 
 
         - name: Prepare build, compilation database etc.
