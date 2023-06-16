@@ -1,5 +1,7 @@
 #pragma once
 #include <cstdio>
+#include <fstream>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <string>
@@ -27,9 +29,11 @@ enum class Atom {
   kComma
 };
 
+std::string debug_atom(const Atom &atom);
+
 class Lexer {
  public:
-  Lexer() = default;
+  explicit Lexer(std::string source);
   Atom read();
   const std::string &atom() const { return atom_; }
   char next() const { return next_; }
@@ -44,20 +48,23 @@ class Lexer {
 
   inline void skip_spaces() {
     while (isspace(next_)) {
-      next_ = getchar();
+      next_ = source_file_.get();
     }
   }
 
   char advance() {
     current_ = next_;
     skip_spaces();
-    return getchar();
+    return source_file_.get();
   }
 
   std::string atom_;
   char current_;
   char next_ = ' ';
   Atom type_;
+
+  std::string source_;
+  std::fstream source_file_;
 };
 
 static std::map<char, int> op_precedence = {{'=', 2},  {'<', 10}, {'+', 20},

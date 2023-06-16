@@ -12,30 +12,24 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
 
-void repl(CodegenContext &codegen_context) {
-  Lexer lexer;
+void repl(const std::string &source, CodegenContext &codegen_context) {
+  Lexer lexer(source);
   Parser parser;
-  fprintf(stderr, "> ");
   Atom symbol = lexer.read();
   while (symbol != Atom::kEof) {
     switch (symbol) {
       case Atom::kEof: {
-        fprintf(stderr, "Parsed EOF\n");
         return;
       } break;
 
       case Atom::kKeywordDef: {
         // Handle definition
-        // fprintf(stderr, "Attempting to parse def ....\n");
         DefinitionPtr def = parser.definition(lexer);
         if (def) {
-          // fprintf(stderr, "Parsed def\n");
           if (auto *ir = def->codegen(codegen_context)) {
-            ir->print(llvm::errs());
-            fprintf(stderr, "\n");
+            // ir->print(llvm::errs());
           }
         } else {
-          // fprintf(stderr, "Failed to parse...\n");
           lexer.read();
         }
       } break;
@@ -44,10 +38,8 @@ void repl(CodegenContext &codegen_context) {
         // Handle extern
         PrototypePtr expr = Parser::extern_(lexer);
         if (expr) {
-          // fprintf(stderr, "Parsed extern\n");
           if (auto *ir = expr->codegen(codegen_context)) {
-            ir->print(llvm::errs());
-            fprintf(stderr, "\n");
+            // ir->print(llvm::errs());
           }
         } else {
           lexer.read();
@@ -55,11 +47,9 @@ void repl(CodegenContext &codegen_context) {
       } break;
 
       case Atom::kComment: {
-        // fprintf(stderr, "Parsed comment\n");
       } break;
 
       case Atom::kUnknown: {
-        // fprintf(stderr, "Parsed unknown\n");
       } break;
 
       case Atom::kSemicolon: {
@@ -69,11 +59,8 @@ void repl(CodegenContext &codegen_context) {
       default: {
         DefinitionPtr expr = parser.top(lexer);
         if (expr) {
-          // fprintf(stderr, "Parsed top-level expression till %c\n",
-          //         lexer.current());
           if (auto *ir = expr->codegen(codegen_context)) {
-            ir->print(llvm::errs());
-            fprintf(stderr, "\n");
+            // ir->print(llvm::errs());
 
             // Remove anonymous expression
             ir->eraseFromParent();
@@ -84,15 +71,17 @@ void repl(CodegenContext &codegen_context) {
       } break;
     }
 
-    fprintf(stderr, "> ");
     symbol = lexer.read();
   }
 }
 
-int main() {
+int main(int argc, char **argv) {
+  (void)argc;
   CodegenContext codegen_context("kaleidoscope");
 
-  repl(codegen_context);
+  std::string source(argv[1]);
+
+  repl(source, codegen_context);
 
   llvm::Module &module = codegen_context.module();
   module.print(llvm::errs(), nullptr);
@@ -148,8 +137,6 @@ int main() {
 
   pass.run(module);
   dest.flush();
-
-  llvm::outs() << "Wrote " << filename << "\n";
 
   return 0;
 }

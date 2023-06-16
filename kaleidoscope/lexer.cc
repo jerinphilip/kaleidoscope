@@ -9,8 +9,43 @@ bool isOp(char c) {
 }
 }  // namespace detail
 
+std::string debug_atom(const Atom &atom) {
+#define CASE_ATOM(atom) \
+  case Atom::atom:      \
+    return #atom
+
+  switch (atom) {
+    CASE_ATOM(kEof);
+    CASE_ATOM(kIdentifier);
+    CASE_ATOM(kKeywordDef);
+    CASE_ATOM(kKeywordExtern);
+    CASE_ATOM(kKeywordIf);
+    CASE_ATOM(kKeywordThen);
+    CASE_ATOM(kKeywordElse);
+    CASE_ATOM(kKeywordFor);
+    CASE_ATOM(kKeywordIn);
+    CASE_ATOM(kKeywordVar);
+    CASE_ATOM(kNumber);
+    CASE_ATOM(kSemicolon);
+    CASE_ATOM(kComment);
+    CASE_ATOM(kOpen);
+    CASE_ATOM(kClose);
+    CASE_ATOM(kOp);
+    CASE_ATOM(kUnknown);
+    CASE_ATOM(kComma);
+    default:
+      return "unknown";
+  }
+
+#undef CASE_ATOM
+}
+
+Lexer::Lexer(std::string source)
+    : source_(std::move(source)), source_file_(source_) {}
+
 Atom Lexer::read() {
   // fprintf(stderr, "[lexer] Moving past %s\n", atom().c_str());
+  // fprintf(stderr, "[lexer] next_ is %d\n", next_);
 
   // Skip leading whitespaces.
   skip_spaces();
