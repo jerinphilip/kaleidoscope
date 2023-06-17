@@ -4,19 +4,8 @@ target_include_directories(kaleidoscope PUBLIC ${LLVM_INCLUDE_DIRS})
 target_compile_definitions(kaleidoscope PUBLIC ${LLVM_DEFINITIONS})
 
 
-# llvm_map_components_to_libnames is outdated, so try avoiding it. Adding this
-# code to your CMakeList file should fetch all the llvm libraries at configure
-# time.
+# Much as I hate doing this, I don't find another way.
+set(LLVM_LIBRARIES "-lLLVM-15")
 
-# If you intend to fetch libraries of specific components, just replace all
-# with the component names.
-
-# https://stackoverflow.com/a/62939671
-
-execute_process(COMMAND llvm-config --libs all
-                OUTPUT_VARIABLE llvm_libraries 
-                OUTPUT_STRIP_TRAILING_WHITESPACE
-                ERROR_STRIP_TRAILING_WHITESPACE)
-
-target_link_libraries(kaleidoscope PUBLIC ${llvm_libraries})
+target_link_libraries(kaleidoscope PUBLIC ${LLVM_LIBRARIES})
 target_include_directories(kaleidoscope PUBLIC ${CMAKE_SOURCE_DIR})

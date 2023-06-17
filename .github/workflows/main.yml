@@ -8,7 +8,7 @@ on:
 
 jobs:
   clang-format:
-      name: "clang-format"
+      name: "main"
       runs-on: ubuntu-latest
       steps:
         - name: Checkout
@@ -22,16 +22,23 @@ jobs:
             sudo apt-get install -y build-essential cmake
             sudo apt-get install -y clang-format clang-tidy
 
+        - name: Install LLVM-15
+          run: |
+            wget https://apt.llvm.org/llvm.sh
+            chmod +x llvm.sh
+            sudo ./llvm.sh 15
+
         - name: Run clang-format
           run:
               python3 scripts/run-clang-format.py --style file -r kaleidoscope bin
 
 
-        - name: Prepare build, compilation database etc.
+        - name: Build with compilation database
           run: |
               mkdir -p build
               cd build
               cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+              make VERBOSE=1 
 
         - name: Run clang-tidy
           run: |
