@@ -31,7 +31,12 @@ class Parser {
   //       | primary `op` expression
   ExprPtr expression(Lexer &lexer);
 
-  // binOpRHS = ('+' primary)*
+  // unary =
+  //      | primary
+  //      | '!' unary
+  ExprPtr unary(Lexer &lexer);
+
+  // binOpRHS = ('+' unary)*
   ExprPtr binOpRHS(Lexer &lexer, int expr_precedence, ExprPtr lhs);
 
   // prototype = id '(' id* ')'

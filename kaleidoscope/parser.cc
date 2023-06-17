@@ -114,7 +114,7 @@ ExprPtr Parser::primary(Lexer &lexer) {
 
 // NOLINTNEXTLINE(misc-no-recursion)
 ExprPtr Parser::expression(Lexer &lexer) {
-  auto lhs = primary(lexer);
+  auto lhs = unary(lexer);
   if (lhs == nullptr) {
     return nullptr;
   }
@@ -128,6 +128,23 @@ int resolve_precedence(char op) {
     return query->second;
   }
   return -1;
+}
+
+// NOLINTNEXTLINE
+ExprPtr Parser::unary(Lexer &lexer) {
+  char c = lexer.current();
+  if (!isascii(c) || c == '(' || c == ',') {
+    return primary(lexer);
+  }
+
+  lexer.read();  // Consume op char.
+  ExprPtr operand = unary(lexer);
+
+  if (operand) {
+    Op op = op_from_keyword(c);
+    return std::make_unique<UnaryOp>(op, std::move(operand));
+  }
+  return nullptr;
 }
 
 // NOLINTNEXTLINE(misc-no-recursion)
@@ -148,7 +165,7 @@ ExprPtr Parser::binOpRHS(Lexer &lexer, int expr_precedence, ExprPtr lhs) {
     lexer.read();
 
     // See what rhs has for us. Attempt to parse again.
-    ExprPtr rhs = primary(lexer);
+    ExprPtr rhs = unary(lexer);
     if (rhs == nullptr) {
       return nullptr;
     }

@@ -67,5 +67,13 @@ class Lexer {
   std::fstream source_file_;
 };
 
-static std::map<char, int> op_precedence = {{'=', 2},  {'<', 10}, {'+', 20},
-                                            {'-', 20}, {'*', 40}, {'/', 40}};
+static const std::map<char, int> op_precedence = {
+    //
+    {':', 1},              // Sequencing operator.
+    {'=', 2},              // Assignment
+    {'|', 5},              // Logical OR
+    {'&', 6},              // Logical AND
+    {'<', 10}, {'>', 10},  // less-than, greater than
+    {'+', 20}, {'-', 20},  //
+    {'*', 40}, {'/', 40}   //
+};

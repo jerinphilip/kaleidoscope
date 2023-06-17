@@ -18,7 +18,19 @@ class Expr {
 
 using ExprPtr = std::unique_ptr<Expr>;
 
-enum class Op { add, sub, mul, div, mod, lt, unknown };
+enum class Op {
+  add,
+  sub,
+  mul,
+  div,
+  mod,
+  lt,
+  gt,
+  unknown,
+  sequence,
+  logical_or,
+  logical_and
+};
 
 class Number : public Expr {
  public:
@@ -60,6 +72,16 @@ class BinaryOp : public Expr {
  private:
   Op op_;
   ExprPtr lhs_, rhs_;
+};
+
+class UnaryOp : public Expr {
+ public:
+  UnaryOp(Op op, ExprPtr operand) : op_(op), operand_(std::move(operand)) {}
+  llvm::Value *codegen(CodegenContext &codegen_context) const final;
+
+ private:
+  Op op_;
+  ExprPtr operand_;
 };
 
 namespace function {

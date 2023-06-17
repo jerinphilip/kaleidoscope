@@ -84,6 +84,19 @@ Value *VarIn::codegen(CodegenContext &codegen_context) const {
   return body_value;
 }
 
+Value *UnaryOp::codegen(CodegenContext &codegen_context) const {
+  Value *operand = operand_->codegen(codegen_context);
+  if (!operand) {
+    return nullptr;
+  }
+
+  switch (op_) {
+    default:
+      return LogErrorV("invalid unary operator");
+      break;
+  }
+}
+
 Value *BinaryOp::codegen(CodegenContext &codegen_context) const {
   Value *lhs = lhs_->codegen(codegen_context);
   Value *rhs = rhs_->codegen(codegen_context);
@@ -113,7 +126,11 @@ Value *BinaryOp::codegen(CodegenContext &codegen_context) const {
       // operator would return 0.0 and -1.0, depending on the input value.
 
       return builder.CreateUIToFP(
-          lhs, Type::getDoubleTy(codegen_context.context()), "booltmp");
+          lhs, Type::getDoubleTy(codegen_context.context()), "ltbooltmp");
+    case Op::gt:
+      lhs = builder.CreateFCmpUGT(lhs, rhs, "cmptmp");
+      return builder.CreateUIToFP(
+          lhs, Type::getDoubleTy(codegen_context.context()), "rtbooltmp");
     default:
       return LogErrorV("invalid binary operator");
   }
