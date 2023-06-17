@@ -31,7 +31,7 @@ class Number : public Expr {
 
 class Variable : public Expr {
  public:
-  explicit Variable(const std::string &name) : name_(name) {}
+  explicit Variable(std::string name) : name_(std::move(name)) {}
   llvm::Value *codegen(CodegenContext &codegen_context) const final;
 
  private:
@@ -79,8 +79,8 @@ namespace function {
 
 class Prototype {
  public:
-  Prototype(const std::string &name, Args args)
-      : name_(name), args_(std::move(args)) {}
+  Prototype(std::string name, Args args)
+      : name_(std::move(name)), args_(std::move(args)) {}
 
   llvm::Function *codegen(CodegenContext &codegen_context) const;
 
@@ -105,8 +105,8 @@ class Definition {
 
 class Call : public Expr {
  public:
-  Call(const std::string &name, ArgExprs args)
-      : name_(name), args_(std::move(args)) {}
+  Call(std::string name, ArgExprs args)
+      : name_(std::move(name)), args_(std::move(args)) {}
   llvm::Value *codegen(CodegenContext &codegen_context) const final;
 
  private:
