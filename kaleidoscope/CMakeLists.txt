@@ -1,4 +1,4 @@
-add_library(kaleidoscope STATIC lexer.cc parser.cc ast.cc libkl.cc)
+add_library(kaleidoscope STATIC lexer.cc parser.cc ast.cc libkl.cc codegen_context.cc) 
 
 target_include_directories(kaleidoscope PUBLIC ${LLVM_INCLUDE_DIRS})
 target_compile_definitions(kaleidoscope PUBLIC ${LLVM_DEFINITIONS})

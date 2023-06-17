@@ -16,39 +16,26 @@ class CodegenContext {
   CodegenContext(const std::string name)
       : context_(), module_(name, context_), builder_(context_) {}
 
-  llvm::LLVMContext &context() { return context_; }
-  llvm::Module &module() { return module_; };
-  llvm::IRBuilder<> &builder() { return builder_; }
+class CodegenContext {
+ public:
+  explicit CodegenContext(const std::string &name);
 
-  llvm::AllocaInst *lookup(const std::string &name) {
-    auto query = named_values_.find(name);
-    if (query == named_values_.end()) {
-      return nullptr;
-    }
-    return query->second;
-  }
+  llvm::LLVMContext &context();
+  llvm::Module &module();
+  llvm::IRBuilder<> &builder();
 
-  void erase(const std::string &name) { named_values_.erase(name); }
+  llvm::AllocaInst *lookup(const std::string &name);
 
-  // void set(const std::string &name, llvm::Value *value) {
-  //   named_values_[name] = value;
-  // }
+  void erase(const std::string &name);
 
-  void set(const std::string &name, llvm::AllocaInst *value) {
-    named_values_[name] = value;
-  }
+  void set(const std::string &name, llvm::AllocaInst *value);
 
   void clear() { named_values_.clear(); }
 
   /// create_entry_block_alloca - Create an alloca instruction in the entry
   /// block of the function.  This is used for mutable variables etc.
   llvm::AllocaInst *create_entry_block_alloca(llvm::Function *fn,
-                                              const std::string &variable) {
-    llvm::IRBuilder<> temp_builder(&fn->getEntryBlock(),
-                                   fn->getEntryBlock().begin());
-    return temp_builder.CreateAlloca(llvm::Type::getDoubleTy(context_), 0,
-                                     variable.c_str());
-  }
+                                              const std::string &variable);
 
  private:
   /// Global context for LLVM book-keeping.
