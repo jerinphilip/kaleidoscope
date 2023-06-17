@@ -22,7 +22,7 @@ enum class Op { add, sub, mul, div, mod, lt, unknown };
 
 class Number : public Expr {
  public:
-  Number(double value) : value_(value) {}
+  explicit Number(double value) : value_(value) {}
   llvm::Value *codegen(CodegenContext &codegen_context) const final;
 
  private:
@@ -31,7 +31,7 @@ class Number : public Expr {
 
 class Variable : public Expr {
  public:
-  Variable(const std::string &name) : name_(name) {}
+  explicit Variable(const std::string &name) : name_(name) {}
   llvm::Value *codegen(CodegenContext &codegen_context) const final;
 
  private:
