@@ -31,6 +31,11 @@ enum class Atom {
 
 std::string debug_atom(const Atom &atom);
 
+struct SourceLocation {
+  int line = 0;
+  int column = 0;
+};
+
 class Lexer {
  public:
   explicit Lexer(std::string source);
@@ -40,22 +45,35 @@ class Lexer {
   char current() const { return current_; }
   Atom type() const { return type_; }
 
+  SourceLocation locate() const { return source_location_; }
+
  private:
   Atom produce(Atom token) {
     type_ = token;
     return token;
   }
 
+  char step() {
+    if (current_ == '\r' || current_ == '\n') {
+      ++source_location_.line;
+      source_location_.column = 0;
+    } else {
+      ++source_location_.column;
+    }
+    char c = source_file_.get();
+    return c;
+  }
+
   inline void skip_spaces() {
     while (isspace(next_)) {
-      next_ = source_file_.get();
+      next_ = step();
     }
   }
 
   char advance() {
     current_ = next_;
     skip_spaces();
-    return source_file_.get();
+    return step();
   }
 
   std::string atom_;
@@ -63,6 +81,7 @@ class Lexer {
   char next_ = ' ';
   Atom type_;
 
+  SourceLocation source_location_;
   std::string source_;
   std::fstream source_file_;
 };
