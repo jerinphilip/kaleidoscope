@@ -44,15 +44,12 @@ class Lexer {
   char next() const { return next_; }
   char current() const { return current_; }
   Atom type() const { return type_; }
-
   SourceLocation locate() const { return source_location_; }
 
  private:
   Atom produce(Atom token);
-
   char step();
   inline void skip_spaces();
-
   char advance();
 
   std::string atom_;
