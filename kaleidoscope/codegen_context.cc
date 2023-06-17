@@ -1,5 +1,16 @@
 #include "codegen_context.h"
 
+DebugInfo::DebugInfo(const std::string &name, llvm::Module &module)
+    : debug_info_builder_(module) {
+  compile_unit_ = debug_info_builder_.createCompileUnit(
+      llvm::dwarf::DW_LANG_C, debug_info_builder_.createFile(name, "."), "kali",
+      false, "", 0);
+  type_ = debug_info_builder_.createBasicType("double", 64,
+                                              llvm::dwarf::DW_ATE_float);
+}
+
+llvm::DIType *DebugInfo::type() { return type_; }
+
 CodegenContext::CodegenContext(const std::string &name)
     : module_(name, context_), builder_(context_) {}
 

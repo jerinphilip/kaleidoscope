@@ -237,7 +237,7 @@ DefinitionPtr Parser::top(Lexer &lexer) {
   ExprPtr expr = expression(lexer);
   if (expr != nullptr) {
     PrototypePtr prototype_expr =
-        std::make_unique<function::Prototype>("__anon_expr", function::Args());
+        std::make_unique<function::Prototype>("main", function::Args());
     return std::make_unique<function::Definition>(std::move(prototype_expr),
                                                   std::move(expr));
   }

@@ -6,15 +6,23 @@
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
+#include "llvm/IR/DIBuilder.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
 
-class CodegenContext {
+class DebugInfo {
  public:
-  CodegenContext(const std::string name)
-      : context_(), module_(name, context_), builder_(context_) {}
+  DebugInfo(const std::string &name, llvm::Module &module);
+  llvm::DICompileUnit *compile_unit();
+  llvm::DIType *type();
+
+ private:
+  llvm::DICompileUnit *compile_unit_;
+  llvm::DIType *type_;
+  llvm::DIBuilder debug_info_builder_;
+};
 
 class CodegenContext {
  public:
