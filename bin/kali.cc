@@ -53,11 +53,11 @@ void repl(const std::string &source, CodegenContext &codegen_context) {
       case Atom::kComment: {
       } break;
 
-      case Atom::kUnknown: {
-      } break;
-
       case Atom::kSemicolon: {
         lexer.read();
+      } break;
+
+      case Atom::kUnknown: {
       } break;
 
       default: {
