@@ -48,33 +48,12 @@ class Lexer {
   SourceLocation locate() const { return source_location_; }
 
  private:
-  Atom produce(Atom token) {
-    type_ = token;
-    return token;
-  }
+  Atom produce(Atom token);
 
-  char step() {
-    if (current_ == '\r' || current_ == '\n') {
-      ++source_location_.line;
-      source_location_.column = 0;
-    } else {
-      ++source_location_.column;
-    }
-    char c = source_file_.get();
-    return c;
-  }
+  char step();
+  inline void skip_spaces();
 
-  inline void skip_spaces() {
-    while (isspace(next_)) {
-      next_ = step();
-    }
-  }
-
-  char advance() {
-    current_ = next_;
-    skip_spaces();
-    return step();
-  }
+  char advance();
 
   std::string atom_;
   char current_;
