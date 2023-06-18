@@ -9,7 +9,7 @@ DebugInfo::DebugInfo(const std::string &name, llvm::Module &module)
                                               llvm::dwarf::DW_ATE_float);
 }
 
-void DebugInfo::emit_location(Expr *expr, llvm::IRBuilder<> &builder) {
+void DebugInfo::emit_location(const Expr *expr, llvm::IRBuilder<> &builder) {
   if (!expr) {
     return builder.SetCurrentDebugLocation(llvm::DebugLoc());
   }
@@ -65,3 +65,42 @@ llvm::AllocaInst *CodegenContext::create_entry_block_alloca(
 llvm::DIBuilder &CodegenContext::debug_info_builder() {
   return debug_info_.debug_info_builder();
 }
+
+void CodegenContext::emit_location(const Expr *expr) {
+  debug_info_.emit_location(expr, builder_);
+}
+
+void DebugInfo::push_subprogram(const std::string &name,
+                                const function::Definition *definition,
+                                llvm::Function *fn) {
+  // Create a subprogram DIE for this function.
+  llvm::DIFile *unit = debug_info_builder_.createFile(
+      compile_unit_->getFilename(), compile_unit_->getDirectory());
+  llvm::DIScope *scope = unit;
+  const SourceLocation &location = definition->location();
+
+  const function::Prototype *prototype = definition->prototype();
+  llvm::DISubprogram *subprogram = debug_info_builder_.createFunction(
+      scope, name, llvm::StringRef(), unit, location.line,
+      create_function_type(prototype->args().size()), location.line,
+      llvm::DINode::FlagPrototyped, llvm::DISubprogram::SPFlagDefinition);
+  fn->setSubprogram(subprogram);
+  lexical_blocks_.push_back(subprogram);
+}
+
+void DebugInfo::pop_subprogram() { lexical_blocks_.pop_back(); }
+
+llvm::DISubroutineType *DebugInfo::create_function_type(size_t args) {
+  llvm::SmallVector<llvm::Metadata *, 8> type_signature;
+
+  // Add the result type.
+  type_signature.push_back(type_);
+
+  for (size_t i = 0; i < args; ++i) {
+    type_signature.push_back(type_);
+  }
+  auto type_array = debug_info_builder_.getOrCreateTypeArray(type_signature);
+  return debug_info_builder_.createSubroutineType(type_array);
+}
+
+DebugInfo &CodegenContext::debug_info() { return debug_info_; }

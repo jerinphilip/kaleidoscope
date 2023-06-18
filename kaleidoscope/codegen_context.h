@@ -20,7 +20,12 @@ class DebugInfo {
   llvm::DICompileUnit *compile_unit();
   llvm::DIType *type();
   llvm::DIBuilder &debug_info_builder();
-  void emit_location(Expr *expr, llvm::IRBuilder<> &builder);
+  void emit_location(const Expr *expr, llvm::IRBuilder<> &builder);
+  void push_subprogram(const std::string &name,
+                       const function::Definition *definition,
+                       llvm::Function *fn);
+  llvm::DISubroutineType *create_function_type(size_t args);
+  void pop_subprogram();
 
  private:
   llvm::DICompileUnit *compile_unit_;
@@ -36,6 +41,7 @@ class CodegenContext {
   llvm::LLVMContext &context();
   llvm::Module &module();
   llvm::IRBuilder<> &builder();
+  DebugInfo &debug_info();
 
   // Used to handle instructions for named values.
 
@@ -50,6 +56,7 @@ class CodegenContext {
   void clear();
 
   llvm::DIBuilder &debug_info_builder();
+  void emit_location(const Expr *expr);
 
  private:
   /// Global context for LLVM book-keeping.

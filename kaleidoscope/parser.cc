@@ -202,6 +202,7 @@ std::string keyword_from_op(Op op) {
 }
 
 PrototypePtr Parser::prototype(Lexer &lexer) {
+  SourceLocation location = lexer.locate();
   if (lexer.type() != Atom::kIdentifier) {
     return LogErrorP("Expected function name in prototype");
   }
@@ -231,7 +232,8 @@ PrototypePtr Parser::prototype(Lexer &lexer) {
   }
   lexer.read();  // Consume ')'
 
-  return std::make_unique<function::Prototype>(identifier, std::move(args));
+  return std::make_unique<function::Prototype>(identifier, std::move(args),
+                                               std::move(location));
 }
 
 DefinitionPtr Parser::definition(Lexer &lexer) {
@@ -244,8 +246,8 @@ DefinitionPtr Parser::definition(Lexer &lexer) {
 
   ExprPtr body = expression(lexer);
   if (body != nullptr) {
-    return std::make_unique<function::Definition>(std::move(prototype_expr),
-                                                  std::move(body));
+    return std::make_unique<function::Definition>(
+        std::move(prototype_expr), std::move(body), std::move(location));
   }
 
   return nullptr;
@@ -255,10 +257,10 @@ DefinitionPtr Parser::top(Lexer &lexer) {
   SourceLocation location = lexer.locate();
   ExprPtr expr = expression(lexer);
   if (expr != nullptr) {
-    PrototypePtr prototype_expr =
-        std::make_unique<function::Prototype>("main", function::Args());
-    return std::make_unique<function::Definition>(std::move(prototype_expr),
-                                                  std::move(expr));
+    PrototypePtr prototype_expr = std::make_unique<function::Prototype>(
+        "main", function::Args(), std::move(location));
+    return std::make_unique<function::Definition>(
+        std::move(prototype_expr), std::move(expr), std::move(location));
   }
   return nullptr;
 }

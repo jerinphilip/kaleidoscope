@@ -120,23 +120,30 @@ namespace function {
 
 class Prototype {
  public:
-  Prototype(std::string name, Args args);
+  Prototype(std::string name, Args args, SourceLocation source_location);
   llvm::Function *codegen(CodegenContext &codegen_context) const;
-  const std::string &name() { return name_; };
+  const std::string &name() const { return name_; };
+  const Args &args() const { return args_; }
+  const SourceLocation &location() const { return source_location_; }
 
  private:
   std::string name_;
   Args args_;
+  SourceLocation source_location_;
 };
 
 class Definition {
  public:
-  Definition(PrototypePtr prototype, ExprPtr body);
+  Definition(PrototypePtr prototype, ExprPtr body,
+             SourceLocation source_location);
   llvm::Function *codegen(CodegenContext &codegen_context) const;
+  const Prototype *prototype() const { return prototype_.get(); }
+  const SourceLocation &location() const { return source_location_; }
 
  private:
   PrototypePtr prototype_;
   ExprPtr body_;
+  SourceLocation source_location_;
 };
 
 class Call : public Expr {

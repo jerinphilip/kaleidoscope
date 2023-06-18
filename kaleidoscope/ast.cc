@@ -126,11 +126,17 @@ llvm::raw_ostream &For::dump(llvm::raw_ostream &out, int indent_level) {
 
 namespace function {
 
-Prototype::Prototype(std::string name, Args args)
-    : name_(std::move(name)), args_(std::move(args)) {}
+Prototype::Prototype(std::string name, Args args,
+                     SourceLocation source_location)
+    : name_(std::move(name)),
+      args_(std::move(args)),
+      source_location_(std::move(source_location)) {}
 
-Definition::Definition(PrototypePtr prototype, ExprPtr body)
-    : prototype_(std::move(prototype)), body_(std::move(body)) {}
+Definition::Definition(PrototypePtr prototype, ExprPtr body,
+                       SourceLocation source_location)
+    : prototype_(std::move(prototype)),
+      body_(std::move(body)),
+      source_location_(std::move(source_location)) {}
 
 Call::Call(std::string name, ArgExprs args, SourceLocation source_location)
     : Expr(std::move(source_location)),
@@ -140,6 +146,7 @@ Call::Call(std::string name, ArgExprs args, SourceLocation source_location)
 }  // namespace function
 
 Value *Number::codegen(CodegenContext &codegen_context) const {
+  codegen_context.emit_location(this);
   return ConstantFP::get(codegen_context.context(), APFloat(value_));
 }
 
@@ -150,6 +157,7 @@ Value *Variable::codegen(CodegenContext &codegen_context) const {
 
   // Load the value
   auto &builder = codegen_context.builder();
+  codegen_context.emit_location(this);
   return builder.CreateLoad(alloca_inst->getAllocatedType(), alloca_inst,
                             name_.c_str());
 }
@@ -194,10 +202,12 @@ Value *VarIn::codegen(CodegenContext &codegen_context) const {
     codegen_context.set(name, old_bindings[i]);
   }
 
+  codegen_context.emit_location(this);
   return body_value;
 }
 
 Value *BinaryOp::codegen(CodegenContext &codegen_context) const {
+  codegen_context.emit_location(this);
   Value *lhs = lhs_->codegen(codegen_context);
   Value *rhs = rhs_->codegen(codegen_context);
   if (!lhs || !rhs) return nullptr;
@@ -298,6 +308,9 @@ Function *Definition::codegen(CodegenContext &codegen_context) const {
   auto &builder = codegen_context.builder();
   builder.SetInsertPoint(basic_block);
 
+  auto &debug_info = codegen_context.debug_info();
+  debug_info.push_subprogram(prototype_->name(), this, fn);
+
   // Record the function arguments in the NamedValues map.
   codegen_context.clear();
   for (auto &arg : fn->args()) {
@@ -308,6 +321,9 @@ Function *Definition::codegen(CodegenContext &codegen_context) const {
     builder.CreateStore(&arg, alloca);
     codegen_context.set(name, alloca);
   }
+
+  // TODO(jerinphilip)
+  // debug_info.emit_location(this, builder);
 
   if (Value *ret_val = body_->codegen(codegen_context)) {
     // Finish off the function.
@@ -323,12 +339,15 @@ Function *Definition::codegen(CodegenContext &codegen_context) const {
 
   // Error reading body, remove function.
   fn->eraseFromParent();
+
+  debug_info.pop_subprogram();
   return nullptr;
 }
 
 }  // namespace function
 
 Value *IfThenElse::codegen(CodegenContext &codegen_context) const {
+  codegen_context.emit_location(this);
   Value *condition_value = condition_->codegen(codegen_context);
   if (!condition_value) {
     return nullptr;
@@ -389,6 +408,8 @@ llvm::Value *For::codegen(CodegenContext &codegen_context) const {
 
   // Emit the start code first, without 'variable' in scope.
   AllocaInst *alloca = codegen_context.create_entry_block_alloca(fn, var_);
+
+  codegen_context.emit_location(this);
 
   Value *start_value = start_->codegen(codegen_context);
   if (!start_value) return nullptr;
