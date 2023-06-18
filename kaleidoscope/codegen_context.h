@@ -17,6 +17,7 @@ class DebugInfo {
   DebugInfo(const std::string &name, llvm::Module &module);
   llvm::DICompileUnit *compile_unit();
   llvm::DIType *type();
+  llvm::DIBuilder &debug_info_builder();
 
  private:
   llvm::DICompileUnit *compile_unit_;
@@ -32,18 +33,19 @@ class CodegenContext {
   llvm::Module &module();
   llvm::IRBuilder<> &builder();
 
-  llvm::AllocaInst *lookup(const std::string &name);
-
-  void erase(const std::string &name);
-
-  void set(const std::string &name, llvm::AllocaInst *value);
-
-  void clear() { named_values_.clear(); }
+  // Used to handle instructions for named values.
 
   /// create_entry_block_alloca - Create an alloca instruction in the entry
   /// block of the function.  This is used for mutable variables etc.
   llvm::AllocaInst *create_entry_block_alloca(llvm::Function *fn,
                                               const std::string &variable);
+
+  void set(const std::string &name, llvm::AllocaInst *value);
+  llvm::AllocaInst *lookup(const std::string &name);
+  void erase(const std::string &name);
+  void clear();
+
+  llvm::DIBuilder &debug_info_builder();
 
  private:
   /// Global context for LLVM book-keeping.
@@ -60,4 +62,6 @@ class CodegenContext {
 
   // std::map<std::string, llvm::Value *> named_values_;
   std::map<std::string, llvm::AllocaInst *> named_values_;
+
+  DebugInfo debug_info_;
 };

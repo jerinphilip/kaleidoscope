@@ -10,9 +10,10 @@ DebugInfo::DebugInfo(const std::string &name, llvm::Module &module)
 }
 
 llvm::DIType *DebugInfo::type() { return type_; }
+llvm::DIBuilder &DebugInfo::debug_info_builder() { return debug_info_builder_; }
 
 CodegenContext::CodegenContext(const std::string &name)
-    : module_(name, context_), builder_(context_) {}
+    : module_(name, context_), builder_(context_), debug_info_(name, module_) {}
 
 llvm::LLVMContext &CodegenContext::context() { return context_; }
 llvm::Module &CodegenContext::module() { return module_; };
@@ -34,10 +35,16 @@ void CodegenContext::erase(const std::string &name) {
   named_values_.erase(name);
 }
 
+void CodegenContext::clear() { named_values_.clear(); }
+
 llvm::AllocaInst *CodegenContext::create_entry_block_alloca(
     llvm::Function *fn, const std::string &variable) {
   llvm::IRBuilder<> temp_builder(&fn->getEntryBlock(),
                                  fn->getEntryBlock().begin());
   return temp_builder.CreateAlloca(llvm::Type::getDoubleTy(context_), nullptr,
                                    variable);
+}
+
+llvm::DIBuilder &CodegenContext::debug_info_builder() {
+  return debug_info_.debug_info_builder();
 }

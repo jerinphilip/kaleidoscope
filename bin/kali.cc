@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
 
   std::string filename = "output.o";
   std::error_code error_code;
-  llvm::raw_fd_ostream dest(filename, error_code, llvm::sys::fs::OF_None);
+  llvm::raw_fd_ostream output(filename, error_code, llvm::sys::fs::OF_None);
 
   if (error_code) {
     llvm::errs() << "Could not open file: " << error_code.message();
@@ -144,14 +144,17 @@ int main(int argc, char **argv) {
   // Simplify the control flow graph (deleting unreachable blocks, etc).
   pass.add(llvm::createCFGSimplificationPass());
 
-  if (target_machine->addPassesToEmitFile(pass, dest, nullptr, filetype)) {
+  llvm::DIBuilder &debug_info_builder = codegen_context.debug_info_builder();
+  debug_info_builder.finalize();
+
+  if (target_machine->addPassesToEmitFile(pass, output, nullptr, filetype)) {
     llvm::errs() << "target_machine can't emit a file of this type";
     return 1;
   }
 
   pass.run(module);
   module.print(llvm::errs(), nullptr);
-  dest.flush();
+  output.flush();
 
   return 0;
 }
