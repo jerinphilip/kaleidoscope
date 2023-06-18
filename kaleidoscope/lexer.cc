@@ -162,14 +162,14 @@ Atom Lexer::produce(Atom token) {
 }
 
 char Lexer::step() {
-  if (current_ == '\r' || current_ == '\n') {
+  if (lookback_ == '\r' || lookback_ == '\n') {
     ++source_location_.line;
     source_location_.column = 0;
   } else {
     ++source_location_.column;
   }
-  char c = source_file_.get();
-  return c;
+  lookback_ = source_file_.get();
+  return lookback_;
 }
 
 void Lexer::skip_spaces() {

@@ -55,6 +55,8 @@ class Lexer {
   char next_ = ' ';
   Atom type_;
 
+  char lookback_ = ' ';
+
   SourceLocation source_location_;
   std::string source_;
   std::fstream source_file_;
