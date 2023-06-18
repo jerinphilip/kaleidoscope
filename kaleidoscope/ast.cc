@@ -27,6 +27,8 @@ llvm::Value *LogErrorV(const char *str) {
 Expr::Expr(SourceLocation source_location)
     : source_location_(std::move(source_location)) {}
 
+const SourceLocation &Expr::location() const { return source_location_; }
+
 Expr::~Expr() = default;
 
 Number::Number(double value, SourceLocation source_location)

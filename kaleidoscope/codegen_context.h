@@ -1,7 +1,9 @@
 #pragma once
 #include <map>
 #include <memory>
+#include <vector>
 
+#include "ast.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/BasicBlock.h"
@@ -18,11 +20,13 @@ class DebugInfo {
   llvm::DICompileUnit *compile_unit();
   llvm::DIType *type();
   llvm::DIBuilder &debug_info_builder();
+  void emit_location(Expr *expr, llvm::IRBuilder<> &builder);
 
  private:
   llvm::DICompileUnit *compile_unit_;
   llvm::DIType *type_;
   llvm::DIBuilder debug_info_builder_;
+  std::vector<llvm::DIScope *> lexical_blocks_;
 };
 
 class CodegenContext {

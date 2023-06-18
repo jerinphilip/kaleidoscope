@@ -16,6 +16,7 @@ class Expr {
   explicit Expr(SourceLocation source_location);
   virtual ~Expr();
   virtual llvm::Value *codegen(CodegenContext &codegen_ctx) const = 0;
+  virtual const SourceLocation &location() const;
 
  private:
   SourceLocation source_location_;

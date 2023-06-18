@@ -9,6 +9,23 @@ DebugInfo::DebugInfo(const std::string &name, llvm::Module &module)
                                               llvm::dwarf::DW_ATE_float);
 }
 
+void DebugInfo::emit_location(Expr *expr, llvm::IRBuilder<> &builder) {
+  if (!expr) {
+    return builder.SetCurrentDebugLocation(llvm::DebugLoc());
+  }
+
+  llvm::DIScope *scope = nullptr;
+  if (lexical_blocks_.empty()) {
+    scope = compile_unit_;
+  } else {
+    scope = lexical_blocks_.back();
+  }
+
+  const SourceLocation &location = expr->location();
+  builder.SetCurrentDebugLocation(llvm::DILocation::get(
+      scope->getContext(), location.line, location.column, scope));
+}
+
 llvm::DIType *DebugInfo::type() { return type_; }
 llvm::DIBuilder &DebugInfo::debug_info_builder() { return debug_info_builder_; }
 
