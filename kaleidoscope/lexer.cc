@@ -10,34 +10,29 @@ bool isOp(char c) {
 }  // namespace detail
 
 std::string debug_atom(const Atom &atom) {
-#define CASE_ATOM(atom) \
-  case Atom::atom:      \
-    return #atom
-
   switch (atom) {
-    CASE_ATOM(kEof);
-    CASE_ATOM(kIdentifier);
-    CASE_ATOM(kKeywordDef);
-    CASE_ATOM(kKeywordExtern);
-    CASE_ATOM(kKeywordIf);
-    CASE_ATOM(kKeywordThen);
-    CASE_ATOM(kKeywordElse);
-    CASE_ATOM(kKeywordFor);
-    CASE_ATOM(kKeywordIn);
-    CASE_ATOM(kKeywordVar);
-    CASE_ATOM(kNumber);
-    CASE_ATOM(kSemicolon);
-    CASE_ATOM(kComment);
-    CASE_ATOM(kOpen);
-    CASE_ATOM(kClose);
-    CASE_ATOM(kOp);
-    CASE_ATOM(kUnknown);
-    CASE_ATOM(kComma);
-    default:
-      return "unknown";
+      // clang-format off
+    case Atom::eof            : return "eof";
+    case Atom::identifier     : return "identifier";
+    case Atom::keyword_def    : return "keyword_def";
+    case Atom::keyword_extern : return "keyword_extern";
+    case Atom::keyword_if     : return "keyword_if";
+    case Atom::keyword_then   : return "keyword_then";
+    case Atom::keyword_else   : return "keyword_else";
+    case Atom::keyword_for    : return "keyword_for";
+    case Atom::keyword_in     : return "keyword_in";
+    case Atom::keyword_var    : return "keyword_var";
+    case Atom::number         : return "number";
+    case Atom::semicolon      : return "semicolon";
+    case Atom::kComment       : return "kComment";
+    case Atom::open           : return "open";
+    case Atom::close          : return "close";
+    case Atom::op             : return "op";
+    case Atom::unknown        : return "unknown";
+    case Atom::comma          : return "comma";
+    default                   : return "unknown";
+      // clang-format on
   }
-
-#undef CASE_ATOM
 }
 
 Lexer::Lexer(std::string source)
@@ -60,38 +55,38 @@ Atom Lexer::read() {
     }
 
     if (atom_ == "def") {
-      return produce(Atom::kKeywordDef);
+      return produce(Atom::keyword_def);
     }
 
     if (atom_ == "extern") {
-      return produce(Atom::kKeywordExtern);
+      return produce(Atom::keyword_extern);
     }
 
     if (atom_ == "if") {
-      return produce(Atom::kKeywordIf);
+      return produce(Atom::keyword_if);
     }
 
     if (atom_ == "then") {
-      return produce(Atom::kKeywordThen);
+      return produce(Atom::keyword_then);
     }
 
     if (atom_ == "else") {
-      return produce(Atom::kKeywordElse);
+      return produce(Atom::keyword_else);
     }
 
     if (atom_ == "for") {
-      return produce(Atom::kKeywordFor);
+      return produce(Atom::keyword_for);
     }
 
     if (atom_ == "in") {
-      return produce(Atom::kKeywordIn);
+      return produce(Atom::keyword_in);
     }
 
     if (atom_ == "var") {
-      return produce(Atom::kKeywordVar);
+      return produce(Atom::keyword_var);
     }
 
-    return produce(Atom::kIdentifier);
+    return produce(Atom::identifier);
   }
 
   // Number parsing logic.
@@ -102,7 +97,7 @@ Atom Lexer::read() {
       next_ = advance();
     }
 
-    return produce(Atom::kNumber);
+    return produce(Atom::number);
   }
 
   // Comments
@@ -119,41 +114,41 @@ Atom Lexer::read() {
   if (next_ == '(') {
     atom_ = "(";
     next_ = advance();
-    return produce(Atom::kOpen);
+    return produce(Atom::open);
   }
 
   if (next_ == ')') {
     atom_ = ")";
     next_ = advance();
-    return produce(Atom::kClose);
+    return produce(Atom::close);
   }
 
   if (next_ == EOF) {
     atom_ = std::string(1, EOF);
-    return produce(Atom::kEof);
+    return produce(Atom::eof);
   }
 
   if (next_ == ';') {
     atom_ = std::string(1, next_);
     next_ = advance();
-    return produce(Atom::kSemicolon);
+    return produce(Atom::semicolon);
   }
 
   if (detail::isOp(next_)) {
     atom_ = std::string(1, next_);
     next_ = advance();
-    return produce(Atom::kOp);
+    return produce(Atom::op);
   }
 
   if (next_ == ',') {
     atom_ = std::string(1, next_);
     next_ = advance();
-    return produce(Atom::kComma);
+    return produce(Atom::comma);
   }
 
   atom_ = std::string(1, next_);
   next_ = advance();
-  return produce(Atom::kUnknown);
+  return produce(Atom::unknown);
 }
 
 Atom Lexer::produce(Atom token) {

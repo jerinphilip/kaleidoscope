@@ -20,13 +20,13 @@ void repl(const std::string &source, CodegenContext &codegen_context) {
   Lexer lexer(source);
   Parser parser;
   Atom symbol = lexer.read();
-  while (symbol != Atom::kEof) {
+  while (symbol != Atom::eof) {
     switch (symbol) {
-      case Atom::kEof: {
+      case Atom::eof: {
         return;
       } break;
 
-      case Atom::kKeywordDef: {
+      case Atom::keyword_def: {
         // Handle definition
         DefinitionPtr def = parser.definition(lexer);
         if (def) {
@@ -38,7 +38,7 @@ void repl(const std::string &source, CodegenContext &codegen_context) {
         }
       } break;
 
-      case Atom::kKeywordExtern: {
+      case Atom::keyword_extern: {
         // Handle extern
         PrototypePtr expr = Parser::extern_(lexer);
         if (expr) {
@@ -53,11 +53,11 @@ void repl(const std::string &source, CodegenContext &codegen_context) {
       case Atom::kComment: {
       } break;
 
-      case Atom::kSemicolon: {
+      case Atom::semicolon: {
         lexer.read();
       } break;
 
-      case Atom::kUnknown: {
+      case Atom::unknown: {
       } break;
 
       default: {

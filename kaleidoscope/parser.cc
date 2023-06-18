@@ -100,17 +100,17 @@ ExprPtr Parser::primary(Lexer &lexer) {
       char error_buffer[100];
       snprintf(error_buffer, 100, "Unknown token {%s}", lexer.atom().c_str());
       return LogError(error_buffer);
-    case Atom::kIdentifier:
+    case Atom::identifier:
       return identifier(lexer);
-    case Atom::kNumber:
+    case Atom::number:
       return number(lexer);
-    case Atom::kOpen:
+    case Atom::open:
       return paranthesis(lexer);
-    case Atom::kKeywordIf:
+    case Atom::keyword_if:
       return if_then_else(lexer);
-    case Atom::kKeywordFor:
+    case Atom::keyword_for:
       return for_in(lexer);
-    case Atom::kKeywordVar:
+    case Atom::keyword_var:
       return var(lexer);
   }
 }
@@ -203,7 +203,7 @@ std::string keyword_from_op(Op op) {
 
 PrototypePtr Parser::prototype(Lexer &lexer) {
   SourceLocation location = lexer.locate();
-  if (lexer.type() != Atom::kIdentifier) {
+  if (lexer.type() != Atom::identifier) {
     return LogErrorP("Expected function name in prototype");
   }
 
@@ -220,7 +220,7 @@ PrototypePtr Parser::prototype(Lexer &lexer) {
 
   std::vector<std::string> args;
 
-  while (lexer.type() == Atom::kIdentifier) {
+  while (lexer.type() == Atom::identifier) {
     std::string arg = lexer.atom();
     args.push_back(arg);
     // fprintf(stderr, "arg: %s\n", arg.c_str());
@@ -280,7 +280,7 @@ ExprPtr Parser::if_then_else(Lexer &lexer) {
     return nullptr;
   }
 
-  if (lexer.type() != Atom::kKeywordThen) {
+  if (lexer.type() != Atom::keyword_then) {
     return LogError("Expected `then`");
   }
 
@@ -290,7 +290,7 @@ ExprPtr Parser::if_then_else(Lexer &lexer) {
     return nullptr;
   }
 
-  if (lexer.type() != Atom::kKeywordElse) {
+  if (lexer.type() != Atom::keyword_else) {
     return LogError("Expected `else`");
   }
 
@@ -312,7 +312,7 @@ ExprPtr Parser::for_in(Lexer &lexer) {
   SourceLocation location = lexer.locate();
   lexer.read();  // consume `for`.
 
-  if (lexer.type() != Atom::kIdentifier) {
+  if (lexer.type() != Atom::identifier) {
     return LogError("expected identifier after `for`");
   }
 
@@ -348,7 +348,7 @@ ExprPtr Parser::for_in(Lexer &lexer) {
     }
   }
 
-  if (lexer.type() != Atom::kKeywordIn) {
+  if (lexer.type() != Atom::keyword_in) {
     return LogError("expected 'in' after for");
   }
   lexer.read();  // consume 'in'.
@@ -369,7 +369,7 @@ ExprPtr Parser::var(Lexer &lexer) {
   lexer.read();  // consume `var`.
   std::vector<VarIn::Assignment> assignments;
 
-  if (lexer.type() != Atom::kIdentifier) {
+  if (lexer.type() != Atom::identifier) {
     return LogError("Expected at least one identifier.");
   }
 
@@ -399,13 +399,13 @@ ExprPtr Parser::var(Lexer &lexer) {
     }
 
     lexer.read();  // Consume the `,`
-    if (lexer.type() != Atom::kIdentifier) {
+    if (lexer.type() != Atom::identifier) {
       return LogError("Expected identifier list after `var`.");
     }
   }
 
   // Read `in` expression to follow.
-  if (lexer.type() != Atom::kKeywordIn) {
+  if (lexer.type() != Atom::keyword_in) {
     return LogError("Expected `in` keyword after `var`");
   }
 

@@ -6,26 +6,28 @@
 #include <memory>
 #include <string>
 
+// NOLINTBEGIN
 enum class Atom {
-  kEof,
-  kIdentifier,
-  kKeywordDef,
-  kKeywordExtern,
-  kKeywordIf,
-  kKeywordThen,
-  kKeywordElse,
-  kKeywordFor,
-  kKeywordIn,
-  kKeywordVar,
-  kNumber,
-  kSemicolon,
+  eof,
+  identifier,
+  keyword_def,
+  keyword_extern,
+  keyword_if,
+  keyword_then,
+  keyword_else,
+  keyword_for,
+  keyword_in,
+  keyword_var,
+  number,
+  semicolon,
   kComment,
-  kOpen,
-  kClose,
-  kOp,
-  kUnknown,
-  kComma
+  open,
+  close,
+  op,
+  unknown,
+  comma
 };
+// NOLINTEND
 
 std::string debug_atom(const Atom &atom);
 
