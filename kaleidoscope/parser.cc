@@ -188,6 +188,19 @@ Op op_from_keyword(char op) {
   return Op::unknown;
 }
 
+std::string keyword_from_op(Op op) {
+  if (op == Op::add) return "+";
+  if (op == Op::sub) return "-";
+  if (op == Op::div) return "/";
+  if (op == Op::mul) return "*";
+  if (op == Op::lt) return "<";
+
+  std::abort();
+
+  // We will never get here, hopefully?
+  return "unknown_op";
+}
+
 PrototypePtr Parser::prototype(Lexer &lexer) {
   if (lexer.type() != Atom::kIdentifier) {
     return LogErrorP("Expected function name in prototype");
