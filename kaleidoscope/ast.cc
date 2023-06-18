@@ -24,7 +24,60 @@ llvm::Value *LogErrorV(const char *str) {
   return nullptr;
 }
 
+Expr::Expr(SourceLocation source_location)
+    : source_location_(std::move(source_location)) {}
+
 Expr::~Expr() = default;
+
+Number::Number(double value, SourceLocation source_location)
+    : value_(value), Expr(std::move(source_location)) {}
+
+Variable::Variable(std::string name, SourceLocation source_location)
+    : Expr(std::move(source_location)), name_(std::move(name)) {}
+
+VarIn::VarIn(std::vector<Assignment> assignments, ExprPtr body,
+             SourceLocation source_location)
+    : Expr(std::move(source_location)),
+      assignments_(std::move(assignments)),
+      body_(std::move(body)) {}
+
+BinaryOp::BinaryOp(Op op, ExprPtr lhs, ExprPtr rhs,
+                   SourceLocation source_location)
+    : Expr(std::move(source_location)),
+      op_(op),
+      lhs_(std::move(lhs)),
+      rhs_(std::move(rhs)) {}
+
+IfThenElse::IfThenElse(ExprPtr condition, ExprPtr then, ExprPtr otherwise,
+                       SourceLocation source_location)
+    : Expr(std::move(source_location)),
+      condition_(std::move(condition)),
+      then_(std::move(then)),
+      otherwise_(std::move(otherwise)) {}
+
+For::For(std::string var, ExprPtr start, ExprPtr end, ExprPtr step,
+         ExprPtr body, SourceLocation source_location)
+    : Expr(std::move(source_location)),
+      var_(std::move(var)),
+      start_(std::move(start)),
+      end_(std::move(end)),
+      step_(std::move(step)),
+      body_(std::move(body)) {}
+
+namespace function {
+
+Prototype::Prototype(std::string name, Args args)
+    : name_(std::move(name)), args_(std::move(args)) {}
+
+Definition::Definition(PrototypePtr prototype, ExprPtr body)
+    : prototype_(std::move(prototype)), body_(std::move(body)) {}
+
+Call::Call(std::string name, ArgExprs args, SourceLocation source_location)
+    : Expr(std::move(source_location)),
+      name_(std::move(name)),
+      args_(std::move(args)) {}
+
+}  // namespace function
 
 Value *Number::codegen(CodegenContext &codegen_context) const {
   return ConstantFP::get(codegen_context.context(), APFloat(value_));

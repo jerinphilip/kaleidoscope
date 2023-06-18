@@ -6,8 +6,6 @@
 #include <memory>
 #include <string>
 
-#include "ast.h"
-
 enum class Atom {
   kEof,
   kIdentifier,

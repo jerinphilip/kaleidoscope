@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "lexer.h"
 #include "llvm/IR/Value.h"
 
 class CodegenContext;
@@ -12,8 +13,12 @@ llvm::Value *LogErrorV(const char *str);
 
 class Expr {
  public:
+  explicit Expr(SourceLocation source_location);
   virtual ~Expr();
   virtual llvm::Value *codegen(CodegenContext &codegen_ctx) const = 0;
+
+ private:
+  SourceLocation source_location_;
 };
 
 using ExprPtr = std::unique_ptr<Expr>;
@@ -23,7 +28,7 @@ enum class Op { add, sub, mul, div, mod, lt, unknown };
 
 class Number : public Expr {
  public:
-  explicit Number(double value) : value_(value) {}
+  Number(double value, SourceLocation source_location);
   llvm::Value *codegen(CodegenContext &codegen_context) const final;
 
  private:
@@ -32,7 +37,7 @@ class Number : public Expr {
 
 class Variable : public Expr {
  public:
-  explicit Variable(std::string name) : name_(std::move(name)) {}
+  Variable(std::string name, SourceLocation source_location);
   llvm::Value *codegen(CodegenContext &codegen_context) const final;
 
  private:
@@ -42,8 +47,8 @@ class Variable : public Expr {
 class VarIn : public Expr {
  public:
   using Assignment = std::pair<std::string, ExprPtr>;
-  VarIn(std::vector<Assignment> assignments, ExprPtr body)
-      : assignments_(std::move(assignments)), body_(std::move(body)) {}
+  VarIn(std::vector<Assignment> assignments, ExprPtr body,
+        SourceLocation source_location);
   llvm::Value *codegen(CodegenContext &codegen_context) const final;
 
  private:
@@ -53,14 +58,40 @@ class VarIn : public Expr {
 
 class BinaryOp : public Expr {
  public:
-  BinaryOp(Op op, ExprPtr lhs, ExprPtr rhs)
-      : op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)) {}
-
+  BinaryOp(Op op, ExprPtr lhs, ExprPtr rhs, SourceLocation source_location);
   llvm::Value *codegen(CodegenContext &codegen_context) const final;
 
  private:
   Op op_;
   ExprPtr lhs_, rhs_;
+};
+
+class IfThenElse : public Expr {
+ public:
+  IfThenElse(ExprPtr condition, ExprPtr then, ExprPtr otherwise,
+             SourceLocation source_location);
+  llvm::Value *codegen(CodegenContext &codegen_context) const final;
+
+ private:
+  ExprPtr condition_;
+  ExprPtr then_;
+  ExprPtr otherwise_;
+};
+
+class For : public Expr {
+ public:
+  For(std::string var, ExprPtr start, ExprPtr end, ExprPtr step, ExprPtr body,
+      SourceLocation source_location);
+  llvm::Value *codegen(CodegenContext &codegen_context) const final;
+
+ private:
+  std::string var_;
+
+  ExprPtr start_;
+  ExprPtr end_;
+  ExprPtr step_;
+
+  ExprPtr body_;
 };
 
 namespace function {
@@ -80,11 +111,8 @@ namespace function {
 
 class Prototype {
  public:
-  Prototype(std::string name, Args args)
-      : name_(std::move(name)), args_(std::move(args)) {}
-
+  Prototype(std::string name, Args args);
   llvm::Function *codegen(CodegenContext &codegen_context) const;
-
   const std::string &name() { return name_; };
 
  private:
@@ -94,9 +122,7 @@ class Prototype {
 
 class Definition {
  public:
-  Definition(PrototypePtr prototype, ExprPtr body)
-      : prototype_(std::move(prototype)), body_(std::move(body)) {}
-
+  Definition(PrototypePtr prototype, ExprPtr body);
   llvm::Function *codegen(CodegenContext &codegen_context) const;
 
  private:
@@ -106,48 +132,12 @@ class Definition {
 
 class Call : public Expr {
  public:
-  Call(std::string name, ArgExprs args)
-      : name_(std::move(name)), args_(std::move(args)) {}
+  Call(std::string name, ArgExprs args, SourceLocation source_location);
   llvm::Value *codegen(CodegenContext &codegen_context) const final;
 
  private:
   std::string name_;
   ArgExprs args_;
 };
+
 }  // namespace function
-
-class IfThenElse : public Expr {
- public:
-  IfThenElse(ExprPtr condition, ExprPtr then, ExprPtr otherwise)
-      : condition_(std::move(condition)),
-        then_(std::move(then)),
-        otherwise_(std::move(otherwise)) {}
-
-  llvm::Value *codegen(CodegenContext &codegen_context) const final;
-
- private:
-  ExprPtr condition_;
-  ExprPtr then_;
-  ExprPtr otherwise_;
-};
-
-class For : public Expr {
- public:
-  For(std::string var, ExprPtr start, ExprPtr end, ExprPtr step, ExprPtr body)
-      : var_(std::move(var)),
-        start_(std::move(start)),
-        end_(std::move(end)),
-        step_(std::move(step)),
-        body_(std::move(body)) {}
-
-  llvm::Value *codegen(CodegenContext &codegen_context) const final;
-
- private:
-  std::string var_;
-
-  ExprPtr start_;
-  ExprPtr end_;
-  ExprPtr step_;
-
-  ExprPtr body_;
-};
