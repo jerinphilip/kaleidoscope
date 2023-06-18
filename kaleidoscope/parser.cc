@@ -16,8 +16,9 @@ std::unique_ptr<function::Prototype> LogErrorP(const char *message) {
 
 // numberExpr = number
 ExprPtr Parser::number(Lexer &lexer) {
+  SourceLocation location = lexer.locate();
   double value = strtod(lexer.atom().c_str(), nullptr);
-  auto result = std::make_unique<Number>(value);
+  auto result = std::make_unique<Number>(value, std::move(location));
   lexer.read();
   return result;
 }
@@ -47,11 +48,12 @@ ExprPtr Parser::paranthesis(Lexer &lexer) {
 //        | identifierName '(' expression* ')'
 // NOLINTNEXTLINE(misc-no-recursion)
 ExprPtr Parser::identifier(Lexer &lexer) {
+  SourceLocation location = lexer.locate();
   std::string identifier = lexer.atom();
   lexer.read();  // Consume identifier
 
   if (lexer.current() != '(') {
-    return std::make_unique<Variable>(identifier);
+    return std::make_unique<Variable>(identifier, std::move(location));
   }
 
   lexer.read();  // Consume '('
@@ -79,7 +81,8 @@ ExprPtr Parser::identifier(Lexer &lexer) {
     }
   }
 
-  return std::make_unique<function::Call>(identifier, std::move(args));
+  return std::make_unique<function::Call>(identifier, std::move(args),
+                                          std::move(location));
 }
 
 // primary =
@@ -132,6 +135,7 @@ int resolve_precedence(char op) {
 
 // NOLINTNEXTLINE(misc-no-recursion)
 ExprPtr Parser::binOpRHS(Lexer &lexer, int expr_precedence, ExprPtr lhs) {
+  SourceLocation location = lexer.locate();
   while (true) {
     char bin_op = lexer.current();
     // fprintf(stderr, "binOp: %c\n", binOp);
@@ -167,7 +171,7 @@ ExprPtr Parser::binOpRHS(Lexer &lexer, int expr_precedence, ExprPtr lhs) {
     }
 
     lhs = std::make_unique<BinaryOp>(op_from_keyword(bin_op), std::move(lhs),
-                                     std::move(rhs));
+                                     std::move(rhs), std::move(location));
   }
 }
 
@@ -184,7 +188,21 @@ Op op_from_keyword(char op) {
   return Op::unknown;
 }
 
+std::string keyword_from_op(Op op) {
+  if (op == Op::add) return "+";
+  if (op == Op::sub) return "-";
+  if (op == Op::div) return "/";
+  if (op == Op::mul) return "*";
+  if (op == Op::lt) return "<";
+
+  std::abort();
+
+  // We will never get here, hopefully?
+  return "unknown_op";
+}
+
 PrototypePtr Parser::prototype(Lexer &lexer) {
+  SourceLocation location = lexer.locate();
   if (lexer.type() != Atom::kIdentifier) {
     return LogErrorP("Expected function name in prototype");
   }
@@ -214,10 +232,12 @@ PrototypePtr Parser::prototype(Lexer &lexer) {
   }
   lexer.read();  // Consume ')'
 
-  return std::make_unique<function::Prototype>(identifier, std::move(args));
+  return std::make_unique<function::Prototype>(identifier, std::move(args),
+                                               std::move(location));
 }
 
 DefinitionPtr Parser::definition(Lexer &lexer) {
+  SourceLocation location = lexer.locate();
   lexer.read();  // Consume `def`
   std::unique_ptr<function::Prototype> prototype_expr = prototype(lexer);
   if (prototype_expr == nullptr) {
@@ -226,20 +246,21 @@ DefinitionPtr Parser::definition(Lexer &lexer) {
 
   ExprPtr body = expression(lexer);
   if (body != nullptr) {
-    return std::make_unique<function::Definition>(std::move(prototype_expr),
-                                                  std::move(body));
+    return std::make_unique<function::Definition>(
+        std::move(prototype_expr), std::move(body), std::move(location));
   }
 
   return nullptr;
 }
 
 DefinitionPtr Parser::top(Lexer &lexer) {
+  SourceLocation location = lexer.locate();
   ExprPtr expr = expression(lexer);
   if (expr != nullptr) {
-    PrototypePtr prototype_expr =
-        std::make_unique<function::Prototype>("__anon_expr", function::Args());
-    return std::make_unique<function::Definition>(std::move(prototype_expr),
-                                                  std::move(expr));
+    PrototypePtr prototype_expr = std::make_unique<function::Prototype>(
+        "main", function::Args(), std::move(location));
+    return std::make_unique<function::Definition>(
+        std::move(prototype_expr), std::move(expr), std::move(location));
   }
   return nullptr;
 }
@@ -251,6 +272,7 @@ PrototypePtr Parser::extern_(Lexer &lexer) {
 
 // NOLINTNEXTLINE(misc-no-recursion)
 ExprPtr Parser::if_then_else(Lexer &lexer) {
+  SourceLocation location = lexer.locate();
   lexer.read();  // Consume `if`.
   ExprPtr condition = expression(lexer);
 
@@ -281,11 +303,13 @@ ExprPtr Parser::if_then_else(Lexer &lexer) {
   }
 
   return std::make_unique<IfThenElse>(std::move(condition), std::move(then),
-                                      std::move(otherwise));
+                                      std::move(otherwise),
+                                      std::move(location));
 }
 
 // NOLINTNEXTLINE(misc-no-recursion)
 ExprPtr Parser::for_in(Lexer &lexer) {
+  SourceLocation location = lexer.locate();
   lexer.read();  // consume `for`.
 
   if (lexer.type() != Atom::kIdentifier) {
@@ -335,11 +359,13 @@ ExprPtr Parser::for_in(Lexer &lexer) {
   }
 
   return std::make_unique<For>(identifier, std::move(start), std::move(end),
-                               std::move(step), std::move(body));
+                               std::move(step), std::move(body),
+                               std::move(location));
 }
 
 // NOLINTNEXTLINE(misc-no-recursion)
 ExprPtr Parser::var(Lexer &lexer) {
+  SourceLocation source_location = lexer.locate();
   lexer.read();  // consume `var`.
   std::vector<VarIn::Assignment> assignments;
 
@@ -390,7 +416,8 @@ ExprPtr Parser::var(Lexer &lexer) {
     return nullptr;
   }
 
-  return std::make_unique<VarIn>(std::move(assignments), std::move(body));
+  return std::make_unique<VarIn>(std::move(assignments), std::move(body),
+                                 std::move(source_location));
 
   return nullptr;
 }

@@ -1,4 +1,5 @@
 build/
 pieces/main
 *.o
-*.ll
+.cache/
+.vscode/

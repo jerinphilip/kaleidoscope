@@ -155,3 +155,31 @@ Atom Lexer::read() {
   next_ = advance();
   return produce(Atom::kUnknown);
 }
+
+Atom Lexer::produce(Atom token) {
+  type_ = token;
+  return token;
+}
+
+char Lexer::step() {
+  if (lookback_ == '\r' || lookback_ == '\n') {
+    ++source_location_.line;
+    source_location_.column = 0;
+  } else {
+    ++source_location_.column;
+  }
+  lookback_ = source_file_.get();
+  return lookback_;
+}
+
+void Lexer::skip_spaces() {
+  while (isspace(next_)) {
+    next_ = step();
+  }
+}
+
+char Lexer::advance() {
+  current_ = next_;
+  skip_spaces();
+  return step();
+}

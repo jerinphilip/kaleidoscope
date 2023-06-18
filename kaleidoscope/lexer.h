@@ -6,8 +6,6 @@
 #include <memory>
 #include <string>
 
-#include "ast.h"
-
 enum class Atom {
   kEof,
   kIdentifier,
@@ -31,6 +29,11 @@ enum class Atom {
 
 std::string debug_atom(const Atom &atom);
 
+struct SourceLocation {
+  int line = 0;
+  int column = 0;
+};
+
 class Lexer {
  public:
   explicit Lexer(std::string source);
@@ -39,30 +42,22 @@ class Lexer {
   char next() const { return next_; }
   char current() const { return current_; }
   Atom type() const { return type_; }
+  SourceLocation locate() const { return source_location_; }
 
  private:
-  Atom produce(Atom token) {
-    type_ = token;
-    return token;
-  }
-
-  inline void skip_spaces() {
-    while (isspace(next_)) {
-      next_ = source_file_.get();
-    }
-  }
-
-  char advance() {
-    current_ = next_;
-    skip_spaces();
-    return source_file_.get();
-  }
+  Atom produce(Atom token);
+  char step();
+  void skip_spaces();
+  char advance();
 
   std::string atom_;
   char current_;
   char next_ = ' ';
   Atom type_;
 
+  char lookback_ = ' ';
+
+  SourceLocation source_location_;
   std::string source_;
   std::fstream source_file_;
 };
