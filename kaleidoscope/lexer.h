@@ -49,7 +49,7 @@ class Lexer {
  private:
   Atom produce(Atom token);
   char step();
-  inline void skip_spaces();
+  void skip_spaces();
   char advance();
 
   std::string atom_;

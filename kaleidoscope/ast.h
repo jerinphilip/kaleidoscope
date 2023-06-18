@@ -18,6 +18,7 @@ class Expr {
 
 using ExprPtr = std::unique_ptr<Expr>;
 
+// NOLINTNEXTLINE
 enum class Op { add, sub, mul, div, mod, lt, unknown };
 
 class Number : public Expr {
