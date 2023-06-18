@@ -135,8 +135,8 @@ int resolve_precedence(char op) {
 
 // NOLINTNEXTLINE(misc-no-recursion)
 ExprPtr Parser::binOpRHS(Lexer &lexer, int expr_precedence, ExprPtr lhs) {
-  SourceLocation location = lexer.locate();
   while (true) {
+    SourceLocation location = lexer.locate();
     char bin_op = lexer.current();
     // fprintf(stderr, "binOp: %c\n", binOp);
     int precedence = resolve_precedence(bin_op);
@@ -258,9 +258,9 @@ DefinitionPtr Parser::top(Lexer &lexer) {
   ExprPtr expr = expression(lexer);
   if (expr != nullptr) {
     PrototypePtr prototype_expr = std::make_unique<function::Prototype>(
-        "main", function::Args(), std::move(location));
-    return std::make_unique<function::Definition>(
-        std::move(prototype_expr), std::move(expr), std::move(location));
+        "main", function::Args(), location);
+    return std::make_unique<function::Definition>(std::move(prototype_expr),
+                                                  std::move(expr), location);
   }
   return nullptr;
 }
