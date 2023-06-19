@@ -253,7 +253,7 @@ Value *BinaryOp::codegen(CodegenContext &codegen_context) const {
     case Op::gt:
       lhs = builder.CreateFCmpUGT(lhs, rhs, "cmptmp");
       return builder.CreateUIToFP(
-          lhs, Type::getDoubleTy(codegen_context.context()), "rtbooltmp");
+          lhs, Type::getDoubleTy(codegen_context.context()), "gtbooltmp");
     default:
       return LogErrorV("invalid binary operator");
   }
