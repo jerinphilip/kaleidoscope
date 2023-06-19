@@ -7,6 +7,8 @@
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Value.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/Support/raw_ostream.h"
+#include "parser.h"
 
 using llvm::AllocaInst;
 using llvm::APFloat;
@@ -24,9 +26,127 @@ llvm::Value *LogErrorV(const char *str) {
   return nullptr;
 }
 
+namespace {
+
+llvm::raw_ostream &indent(llvm::raw_ostream &out, int size) {
+  return out << std::string(size, ' ');
+}
+
+}  // namespace
+
+Expr::Expr(SourceLocation source_location)
+    : source_location_(std::move(source_location)) {}
+
+const SourceLocation &Expr::location() const { return source_location_; }
+
+llvm::raw_ostream &Expr::dump(llvm::raw_ostream &out, int /*indent = 0*/) {
+  return out << ':' << source_location_.line << ':' << source_location_.column
+             << '\n';
+}
+
 Expr::~Expr() = default;
 
+Number::Number(double value, SourceLocation source_location)
+    : value_(value), Expr(std::move(source_location)) {}
+
+llvm::raw_ostream &Number::dump(llvm::raw_ostream &out, int indent_level) {
+  return Expr::dump(out << value_, indent_level);
+}
+
+Variable::Variable(std::string name, SourceLocation source_location)
+    : Expr(std::move(source_location)), name_(std::move(name)) {}
+
+llvm::raw_ostream &Variable::dump(llvm::raw_ostream &out, int indent_level) {
+  return Expr::dump(out << name_, indent_level);
+}
+
+VarIn::VarIn(std::vector<Assignment> assignments, ExprPtr body,
+             SourceLocation source_location)
+    : Expr(std::move(source_location)),
+      assignments_(std::move(assignments)),
+      body_(std::move(body)) {}
+
+llvm::raw_ostream &VarIn::dump(llvm::raw_ostream &out, int indent_level) {
+  Expr::dump(out << "var", indent_level);
+  for (const auto &assignment : assignments_) {
+    const auto &rhs = assignment.second;
+    const std::string &lhs = assignment.first;
+    rhs->dump(indent(out, indent_level) << lhs << ':', indent_level + 1);
+  }
+  body_->dump(indent(out, indent_level) << "body:", indent_level + 1);
+  return out;
+}
+
+BinaryOp::BinaryOp(Op op, ExprPtr lhs, ExprPtr rhs,
+                   SourceLocation source_location)
+    : Expr(std::move(source_location)),
+      op_(op),
+      lhs_(std::move(lhs)),
+      rhs_(std::move(rhs)) {}
+
+llvm::raw_ostream &BinaryOp::dump(llvm::raw_ostream &out, int indent_level) {
+  Expr::dump(out << "binary" << keyword_from_op(op_), indent_level);
+  lhs_->dump(indent(out, indent_level) << "lhs:", indent_level + 1);
+  rhs_->dump(indent(out, indent_level) << "rhs:", indent_level + 1);
+  return out;
+}
+
+IfThenElse::IfThenElse(ExprPtr condition, ExprPtr then, ExprPtr otherwise,
+                       SourceLocation source_location)
+    : Expr(std::move(source_location)),
+      condition_(std::move(condition)),
+      then_(std::move(then)),
+      otherwise_(std::move(otherwise)) {}
+
+llvm::raw_ostream &IfThenElse::dump(llvm::raw_ostream &out, int indent_level) {
+  Expr::dump(out << "if", indent_level);
+  condition_->dump(indent(out, indent_level) << "condition:", indent_level + 1);
+  then_->dump(indent(out, indent_level) << "then:", indent_level + 1);
+  otherwise_->dump(indent(out, indent_level) << "else:", indent_level + 1);
+  return out;
+}
+
+For::For(std::string var, ExprPtr start, ExprPtr end, ExprPtr step,
+         ExprPtr body, SourceLocation source_location)
+    : Expr(std::move(source_location)),
+      var_(std::move(var)),
+      start_(std::move(start)),
+      end_(std::move(end)),
+      step_(std::move(step)),
+      body_(std::move(body)) {}
+
+llvm::raw_ostream &For::dump(llvm::raw_ostream &out, int indent_level) {
+  Expr::dump(out << "for", indent_level);
+  start_->dump(indent(out, indent_level) << "init:", indent_level + 1);
+  end_->dump(indent(out, indent_level) << "end:", indent_level + 1);
+  step_->dump(indent(out, indent_level) << "step:", indent_level + 1);
+  body_->dump(indent(out, indent_level) << "body:", indent_level + 1);
+  return out;
+}
+
+namespace function {
+
+Prototype::Prototype(std::string name, Args args,
+                     SourceLocation source_location)
+    : name_(std::move(name)),
+      args_(std::move(args)),
+      source_location_(std::move(source_location)) {}
+
+Definition::Definition(PrototypePtr prototype, ExprPtr body,
+                       SourceLocation source_location)
+    : prototype_(std::move(prototype)),
+      body_(std::move(body)),
+      source_location_(std::move(source_location)) {}
+
+Call::Call(std::string name, ArgExprs args, SourceLocation source_location)
+    : Expr(std::move(source_location)),
+      name_(std::move(name)),
+      args_(std::move(args)) {}
+
+}  // namespace function
+
 Value *Number::codegen(CodegenContext &codegen_context) const {
+  codegen_context.emit_location(this);
   return ConstantFP::get(codegen_context.context(), APFloat(value_));
 }
 
@@ -37,6 +157,7 @@ Value *Variable::codegen(CodegenContext &codegen_context) const {
 
   // Load the value
   auto &builder = codegen_context.builder();
+  codegen_context.emit_location(this);
   return builder.CreateLoad(alloca_inst->getAllocatedType(), alloca_inst,
                             name_.c_str());
 }
@@ -81,6 +202,7 @@ Value *VarIn::codegen(CodegenContext &codegen_context) const {
     codegen_context.set(name, old_bindings[i]);
   }
 
+  codegen_context.emit_location(this);
   return body_value;
 }
 
@@ -98,6 +220,7 @@ Value *UnaryOp::codegen(CodegenContext &codegen_context) const {
 }
 
 Value *BinaryOp::codegen(CodegenContext &codegen_context) const {
+  codegen_context.emit_location(this);
   Value *lhs = lhs_->codegen(codegen_context);
   Value *rhs = rhs_->codegen(codegen_context);
   if (!lhs || !rhs) return nullptr;
@@ -156,6 +279,14 @@ Value *Call::codegen(CodegenContext &codegen_context) const {
   return codegen_context.builder().CreateCall(fn, arg_values, "calltmp");
 }
 
+llvm::raw_ostream &Call::dump(llvm::raw_ostream &out, int indent_level) {
+  Expr::dump(out << "call " << name_, indent_level);
+  for (const auto &arg : args_) {
+    arg->dump(indent(out, indent_level + 1), indent_level + 1);
+  }
+  return out;
+}
+
 Function *Prototype::codegen(CodegenContext &codegen_context) const {
   // Make the function type:  double(double,double) etc.
   std::vector<Type *> doubles(args_.size(),
@@ -194,6 +325,9 @@ Function *Definition::codegen(CodegenContext &codegen_context) const {
   auto &builder = codegen_context.builder();
   builder.SetInsertPoint(basic_block);
 
+  auto &debug_info = codegen_context.debug_info();
+  debug_info.push_subprogram(prototype_->name(), this, fn);
+
   // Record the function arguments in the NamedValues map.
   codegen_context.clear();
   for (auto &arg : fn->args()) {
@@ -204,6 +338,9 @@ Function *Definition::codegen(CodegenContext &codegen_context) const {
     builder.CreateStore(&arg, alloca);
     codegen_context.set(name, alloca);
   }
+
+  // TODO(jerinphilip)
+  // debug_info.emit_location(this, builder);
 
   if (Value *ret_val = body_->codegen(codegen_context)) {
     // Finish off the function.
@@ -219,12 +356,15 @@ Function *Definition::codegen(CodegenContext &codegen_context) const {
 
   // Error reading body, remove function.
   fn->eraseFromParent();
+
+  debug_info.pop_subprogram();
   return nullptr;
 }
 
 }  // namespace function
 
 Value *IfThenElse::codegen(CodegenContext &codegen_context) const {
+  codegen_context.emit_location(this);
   Value *condition_value = condition_->codegen(codegen_context);
   if (!condition_value) {
     return nullptr;
@@ -285,6 +425,8 @@ llvm::Value *For::codegen(CodegenContext &codegen_context) const {
 
   // Emit the start code first, without 'variable' in scope.
   AllocaInst *alloca = codegen_context.create_entry_block_alloca(fn, var_);
+
+  codegen_context.emit_location(this);
 
   Value *start_value = start_->codegen(codegen_context);
   if (!start_value) return nullptr;

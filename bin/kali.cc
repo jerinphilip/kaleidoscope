@@ -20,13 +20,13 @@ void repl(const std::string &source, CodegenContext &codegen_context) {
   Lexer lexer(source);
   Parser parser;
   Atom symbol = lexer.read();
-  while (symbol != Atom::kEof) {
+  while (symbol != Atom::eof) {
     switch (symbol) {
-      case Atom::kEof: {
+      case Atom::eof: {
         return;
       } break;
 
-      case Atom::kKeywordDef: {
+      case Atom::keyword_def: {
         // Handle definition
         DefinitionPtr def = parser.definition(lexer);
         if (def) {
@@ -38,7 +38,7 @@ void repl(const std::string &source, CodegenContext &codegen_context) {
         }
       } break;
 
-      case Atom::kKeywordExtern: {
+      case Atom::keyword_extern: {
         // Handle extern
         PrototypePtr expr = Parser::extern_(lexer);
         if (expr) {
@@ -53,11 +53,11 @@ void repl(const std::string &source, CodegenContext &codegen_context) {
       case Atom::kComment: {
       } break;
 
-      case Atom::kSemicolon: {
+      case Atom::semicolon: {
         lexer.read();
       } break;
 
-      case Atom::kUnknown: {
+      case Atom::unknown: {
       } break;
 
       default: {
@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
 
   std::string filename = "output.o";
   std::error_code error_code;
-  llvm::raw_fd_ostream dest(filename, error_code, llvm::sys::fs::OF_None);
+  llvm::raw_fd_ostream output(filename, error_code, llvm::sys::fs::OF_None);
 
   if (error_code) {
     llvm::errs() << "Could not open file: " << error_code.message();
@@ -144,14 +144,17 @@ int main(int argc, char **argv) {
   // Simplify the control flow graph (deleting unreachable blocks, etc).
   pass.add(llvm::createCFGSimplificationPass());
 
-  if (target_machine->addPassesToEmitFile(pass, dest, nullptr, filetype)) {
+  llvm::DIBuilder &debug_info_builder = codegen_context.debug_info_builder();
+  debug_info_builder.finalize();
+
+  if (target_machine->addPassesToEmitFile(pass, output, nullptr, filetype)) {
     llvm::errs() << "target_machine can't emit a file of this type";
     return 1;
   }
 
   pass.run(module);
   module.print(llvm::errs(), nullptr);
-  dest.flush();
+  output.flush();
 
   return 0;
 }

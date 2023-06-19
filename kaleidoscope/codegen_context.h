@@ -1,54 +1,62 @@
 #pragma once
 #include <map>
 #include <memory>
+#include <vector>
 
+#include "ast.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
+#include "llvm/IR/DIBuilder.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
 
+class DebugInfo {
+ public:
+  DebugInfo(const std::string &name, llvm::Module &module);
+  llvm::DICompileUnit *compile_unit();
+  llvm::DIType *type();
+  llvm::DIBuilder &debug_info_builder();
+  void emit_location(const Expr *expr, llvm::IRBuilder<> &builder);
+  void push_subprogram(const std::string &name,
+                       const function::Definition *definition,
+                       llvm::Function *fn);
+  llvm::DISubroutineType *create_function_type(size_t args);
+  void pop_subprogram();
+
+ private:
+  llvm::DICompileUnit *compile_unit_;
+  llvm::DIType *type_;
+  llvm::DIBuilder debug_info_builder_;
+  std::vector<llvm::DIScope *> lexical_blocks_;
+};
+
 class CodegenContext {
  public:
-  CodegenContext(const std::string name)
-      : context_(), module_(name, context_), builder_(context_) {}
+  explicit CodegenContext(const std::string &name);
 
-  llvm::LLVMContext &context() { return context_; }
-  llvm::Module &module() { return module_; };
-  llvm::IRBuilder<> &builder() { return builder_; }
+  llvm::LLVMContext &context();
+  llvm::Module &module();
+  llvm::IRBuilder<> &builder();
+  DebugInfo &debug_info();
 
-  llvm::AllocaInst *lookup(const std::string &name) {
-    auto query = named_values_.find(name);
-    if (query == named_values_.end()) {
-      return nullptr;
-    }
-    return query->second;
-  }
-
-  void erase(const std::string &name) { named_values_.erase(name); }
-
-  // void set(const std::string &name, llvm::Value *value) {
-  //   named_values_[name] = value;
-  // }
-
-  void set(const std::string &name, llvm::AllocaInst *value) {
-    named_values_[name] = value;
-  }
-
-  void clear() { named_values_.clear(); }
+  // Used to handle instructions for named values.
 
   /// create_entry_block_alloca - Create an alloca instruction in the entry
   /// block of the function.  This is used for mutable variables etc.
   llvm::AllocaInst *create_entry_block_alloca(llvm::Function *fn,
-                                              const std::string &variable) {
-    llvm::IRBuilder<> temp_builder(&fn->getEntryBlock(),
-                                   fn->getEntryBlock().begin());
-    return temp_builder.CreateAlloca(llvm::Type::getDoubleTy(context_), 0,
-                                     variable.c_str());
-  }
+                                              const std::string &variable);
+
+  void set(const std::string &name, llvm::AllocaInst *value);
+  llvm::AllocaInst *lookup(const std::string &name);
+  void erase(const std::string &name);
+  void clear();
+
+  llvm::DIBuilder &debug_info_builder();
+  void emit_location(const Expr *expr);
 
  private:
   /// Global context for LLVM book-keeping.
@@ -65,4 +73,6 @@ class CodegenContext {
 
   // std::map<std::string, llvm::Value *> named_values_;
   std::map<std::string, llvm::AllocaInst *> named_values_;
+
+  DebugInfo debug_info_;
 };
