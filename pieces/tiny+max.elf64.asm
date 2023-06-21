@@ -40,16 +40,18 @@ phdrsz      equ   $ - phdr
 
 
 _start:
-      mov   edi, 41
-      mov   esi, 42
-      call _Z3maxii
-      mov   eax, 60                ; rax = syscall number
-      syscall                      ; exit(rdi)
+      mov   edi, 42                ; arg1 = 41
+      mov   esi, 41                ; arg2 = 42
+      call _Z3maxii                ; call max(41, 42)
+      mov   edi, 0                 ; (optional): edi to 0 for blinkenlights visibility.
+      mov   edi, eax               ; register edi = return-value
+      mov   eax, 60                ; register eax = syscall number
+      syscall                      ; exit(register edi)
 
 _Z3maxii:
-      cmp     edi, esi
-      mov     eax, esi
-      cmovge  eax, edi
+      cmp     edi, esi             ; cmp arg2, arg1 
+      mov     eax, esi             ; assume result is arg2
+      cmovge  eax, edi             ; if greater result is arg1
       ret
 
 filesz      equ   $ - $$
