@@ -40,8 +40,8 @@ phdrsz      equ   $ - phdr
 
 
 _start:
-      mov   edi, 42
-      mov   esi, 43
+      mov   edi, 41
+      mov   esi, 42
       call _Z3maxii
       mov   eax, 60                ; rax = syscall number
       syscall                      ; exit(rdi)
