@@ -152,9 +152,25 @@ Atom Lexer::read() {
 }
 
 Atom Lexer::produce(Atom token) {
+  auto escape = [](char c) -> std::string {
+    if (c == EOF) {
+      return "eof";
+    }
+
+    if (c == '\r' || c == '\n') {
+      return "\\n";
+    }
+
+    return std::string(1, c);
+  };
+
   std::string datom = debug_atom(token);
-  fprintf(stderr, "Producing: <%s> as atom: <%s>, current: <%c>, next: <%c>\n",
-          atom_.c_str(), datom.c_str(), current_, next_);
+  std::string dcurrent = escape(current_);
+  std::string dnext = escape(next_);
+
+  // fprintf(stderr, "Producing: <%s> as atom: <%s>, current: <%s>, next:
+  // <%s>\n",
+  //         atom_.c_str(), datom.c_str(), dcurrent.c_str(), dnext.c_str());
   type_ = token;
   return token;
 }

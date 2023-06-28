@@ -75,9 +75,8 @@ ExprPtr Parser::identifier(Lexer &lexer) {
       if (lexer.current() != ',') {
         return LogError("Expected ')' or ',' in argument list");
       }
-      lexer.read();  // Consume ','
 
-      // fprintf(stderr, "FnArg: %s", lexer.atom().c_str());
+      lexer.read();  // Consume ','
     }
   }
 
@@ -137,13 +136,11 @@ int resolve_precedence(char op) {
 ExprPtr Parser::unary(Lexer &lexer) {
   SourceLocation location = lexer.locate();
   char c = lexer.current();
-  fprintf(stderr, "%c \n", c);
-  if (!isascii(c) || c == '(' || c == ',') {
+  if (!is_unary_op(c)) {
     return primary(lexer);
   }
 
   lexer.read();  // Consume op char.
-  fprintf(stderr, "%c \n", lexer.current());
   ExprPtr operand = unary(lexer);
 
   if (operand) {
@@ -222,6 +219,24 @@ std::string keyword_from_op(Op op) {
 
   // We will never get here, hopefully?
   return "unknown_op";
+}
+
+bool is_unary_op(char op) {
+  if (op == '!') {
+    return true;  // NOLINT
+  }
+  return false;
+}
+
+bool is_binary_op(char op) {
+  if (op == '+') return true;
+  if (op == '-') return true;
+  if (op == '/') return true;
+  if (op == '*') return true;
+  if (op == '<') return true;
+  if (op == '|') return true;
+  if (op == '&') return true;
+  return false;
 }
 
 PrototypePtr Parser::prototype(Lexer &lexer) {

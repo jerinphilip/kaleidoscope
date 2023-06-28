@@ -7,6 +7,9 @@ std::unique_ptr<function::Prototype> LogErrorP(const char *message);
 Op op_from_keyword(char op);
 std::string keyword_from_op(Op op);
 
+bool is_unary_op(char op);
+bool is_binary_op(char op);
+
 int resolve_precedence(char op);
 
 class Parser {
