@@ -152,6 +152,9 @@ Atom Lexer::read() {
 }
 
 Atom Lexer::produce(Atom token) {
+  std::string datom = debug_atom(token);
+  fprintf(stderr, "Producing: <%s> as atom: <%s>, current: <%c>, next: <%c>\n",
+          atom_.c_str(), datom.c_str(), current_, next_);
   type_ = token;
   return token;
 }

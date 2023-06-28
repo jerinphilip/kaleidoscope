@@ -29,13 +29,13 @@ class Parser {
   ExprPtr primary(Lexer &lexer);
 
   // expression =
-  //       | primary
-  //       | primary `op` expression
+  //       | unary
+  //       | unary binOpRHS
   ExprPtr expression(Lexer &lexer);
 
   // unary =
   //      | primary
-  //      | '!' unary
+  //      | `op` unary
   ExprPtr unary(Lexer &lexer);
 
   // binOpRHS = ('+' unary)*

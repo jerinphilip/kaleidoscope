@@ -137,11 +137,13 @@ int resolve_precedence(char op) {
 ExprPtr Parser::unary(Lexer &lexer) {
   SourceLocation location = lexer.locate();
   char c = lexer.current();
+  fprintf(stderr, "%c \n", c);
   if (!isascii(c) || c == '(' || c == ',') {
     return primary(lexer);
   }
 
   lexer.read();  // Consume op char.
+  fprintf(stderr, "%c \n", lexer.current());
   ExprPtr operand = unary(lexer);
 
   if (operand) {
@@ -200,6 +202,8 @@ Op op_from_keyword(char op) {
   if (op == '/') return Op::div;
   if (op == '*') return Op::mul;
   if (op == '<') return Op::lt;
+  if (op == '|') return Op::logical_or;
+  if (op == '&') return Op::logical_and;
 
   std::abort();
 
@@ -273,6 +277,9 @@ DefinitionPtr Parser::definition(Lexer &lexer) {
 }
 
 DefinitionPtr Parser::top(Lexer &lexer) {
+  // Parses top-level expression. This is the same as an expression, but we
+  // wrap it in a function called `main`. Why? Because conventions dictate that
+  // it is the `main` function that is the entry point to the program.
   SourceLocation location = lexer.locate();
   ExprPtr expr = expression(lexer);
   if (expr != nullptr) {
