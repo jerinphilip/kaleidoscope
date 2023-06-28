@@ -212,10 +212,12 @@ Value *UnaryOp::codegen(CodegenContext &codegen_context) const {
     return nullptr;
   }
 
+  llvm::IRBuilder<> &builder = codegen_context.builder();
+
   switch (op_) {
+    case Op::logical_not:
     default:
       return LogErrorV("invalid unary operator");
-      break;
   }
 }
 
@@ -226,6 +228,7 @@ Value *BinaryOp::codegen(CodegenContext &codegen_context) const {
   if (!lhs || !rhs) return nullptr;
 
   llvm::IRBuilder<> &builder = codegen_context.builder();
+  llvm::LLVMContext &context = codegen_context.context();
   switch (op_) {
     case Op::add:
       return builder.CreateFAdd(lhs, rhs, "addtmp");
@@ -235,7 +238,7 @@ Value *BinaryOp::codegen(CodegenContext &codegen_context) const {
       return builder.CreateFMul(lhs, rhs, "multmp");
     case Op::div:
       return builder.CreateFMul(lhs, rhs, "divtmp");
-    case Op::lt:
+    case Op::lt: {
       lhs = builder.CreateFCmpULT(lhs, rhs, "cmptmp");
       // Convert bool 0/1 to double 0.0 or 1.0
       //
@@ -250,10 +253,31 @@ Value *BinaryOp::codegen(CodegenContext &codegen_context) const {
 
       return builder.CreateUIToFP(
           lhs, Type::getDoubleTy(codegen_context.context()), "ltbooltmp");
-    case Op::gt:
+    }
+    case Op::gt: {
       lhs = builder.CreateFCmpUGT(lhs, rhs, "cmptmp");
       return builder.CreateUIToFP(
           lhs, Type::getDoubleTy(codegen_context.context()), "gtbooltmp");
+    }
+
+    case Op::logical_and: {
+      Value *zero = ConstantFP::get(context, APFloat(0.0));
+      Value *is_lhs = builder.CreateFCmpUEQ(lhs, zero, "is_lhs");
+      Value *is_rhs = builder.CreateFCmpUEQ(zero, rhs, "is_rhs");
+      Value *is_both = builder.CreateAnd(is_lhs, is_rhs);
+      return builder.CreateUIToFP(
+          is_both, Type::getDoubleTy(codegen_context.context()), "ltbooltmp");
+    }
+
+    case Op::logical_or: {
+      Value *zero = ConstantFP::get(context, APFloat(0.0));
+      Value *is_lhs = builder.CreateFCmpUEQ(lhs, zero, "is_lhs");
+      Value *is_rhs = builder.CreateFCmpUEQ(zero, rhs, "is_rhs");
+      Value *is_either = builder.CreateOr(is_lhs, is_rhs);
+      return builder.CreateUIToFP(
+          is_either, Type::getDoubleTy(codegen_context.context()), "ltbooltmp");
+    }
+
     default:
       return LogErrorV("invalid binary operator");
   }

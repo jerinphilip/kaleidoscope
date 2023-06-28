@@ -38,7 +38,8 @@ enum class Op {
   unknown,
   sequence,
   logical_or,
-  logical_and
+  logical_and,
+  logical_not,
 };
 // NOLINTEND
 
